@@ -49,10 +49,13 @@ html, body {
             font-weight: bold;
             line-height: 50px;
         }
-        .baslik{
-            font-family:"Courgette";
-            font-weight: bolder;
+        .baslik {
+            font-family: "Courgette", cursive;  /* İstersen başka font-family ekleyebilirsin */
+            font-weight: normal;                 /* Kalınlığı kaldırdık */
+            font-style: normal;                  /* İtalik varsa kaldırmak için */
+            text-transform: none;                /* Büyük harf vs varsa kaldırmak için */
         }
+
         .baslik3{
             font-family:"Edu+AU+VIC+WA+NT+Hand:wght@400..700&family=Montserrat:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Slab:wght@100..900&display=swap";
         }

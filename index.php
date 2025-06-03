@@ -53,7 +53,7 @@ try {
     <div class="container-fluid">
 
       <a class="navbar-brand d-flex ms-4" href="#" style="margin-left: 5px;">
-        <img src="images/yeni_logo.png" alt="Logo" width="40" height="40" class="align-text-top">
+        <img src="images/ana_logo.png" alt="Logo" width="40" height="40" class="align-text-top">
 
         <div class="baslik fs-3">
           <a class="dropdown-item" href="index.php">
@@ -436,7 +436,7 @@ try {
 
             <div>Zeynep Nuriye Tekin</div>
 
-            <div style="color: rgb(105, 101, 101); font-weight: bold; font-size: 12px;">Eticaret Ekibi</div>
+            <div style="color: rgb(105, 101, 101); font-weight: bold; font-size: 12px;">Eticaret Ekibi Lideri</div>
           </div>
         </div>
       </div>
@@ -495,12 +495,13 @@ try {
     <div class="row bg-light px-5 ">
       <div class="col-4 mt-4 ">
         <div class=" b bg-light rounded-4 bg-white " style=" height: 410px; width: 350px;">
-          <img src="images/kevser.jpeg " class="img-b rounded-top-4" style=" height: 300px; width: 350px;">
+          <img src="images/evhanimi.jpeg" class="img-b rounded-top-4" style="height: 300px; width: 350px; object-fit: cover; object-position: top;">
+
           <div class="baslik3 text-center fs-4 fw-bold mt-3">
-            Ayşe Türkmen, Muğla
+            Ayşe Türkmen
           </div>
           <div class="text-center" style="font-size: 13px; color:rgb(91, 140, 213) ;">
-            Ev Hanımı
+            Ev Hanımı, Muğla
           </div>
           <div class="text-center mt-2" style="color:rgb(91, 140, 213) ;">
             <i class="bi bi-facebook  mx-2"></i>
@@ -511,12 +512,13 @@ try {
       </div>
       <div class="col-4 mt-4 ">
         <div class=" b bg-light rounded-4 bg-white" style=" height: 410px; width: 350px;">
-          <img src="images/zey.jpeg " class="img-b rounded-top-4" style=" height: 300px; width: 350px;">
+         <img src="images/zey.jpeg" class="img-b rounded-top-4" style="height: 300px; width: 350px; object-fit: cover; object-position: top;">
+
           <div class="baslik3 text-center fs-4 fw-bold mt-3">
-            Zeynep Nuriye Tekin, Bilecik
+            Zeynep Nuriye Tekin
           </div>
           <div class="text-center" style="font-size: 13px; color:rgb(91, 140, 213) ;">
-            Yazılım Mühendisi
+            Yazılım Mühendisi, Bilecik
           </div>
           <div class="text-center mt-2 " style="color:rgb(91, 140, 213) ;">
             <i class="bi bi-facebook  mx-2"></i>
@@ -527,12 +529,14 @@ try {
       </div>
       <div class="col-4 mt-4 mb-5">
         <div class=" b bg-light rounded-4 bg-white" style=" height: 410px; width: 350px;">
-          <img src="images/fatma.png " class="img-b rounded-top-4" style=" height: 300px; width: 350px;">
+          <img src="images/takitasarimcisi.jpeg" class="img-b rounded-top-4" style="height: 300px; width: 350px; object-fit: cover; object-position: top;">
+
+
           <div class="baslik3 text-center fs-4 fw-bold mt-3">
-            Seher Yılmaz, Burdur
+            Seher Yılmaz
           </div>
           <div class="text-center" style="font-size: 13px; color:rgb(91, 140, 213) ;">
-            Takı Tasarımcısı
+            Takı Tasarımcısı, Burdur
           </div>
           <div class="text-center mt-2" style="color:rgb(91, 140, 213) ;">
             <i class="bi bi-facebook  mx-2"></i>
@@ -562,7 +566,7 @@ try {
   <div class="x swiper-wrapper">
     <div class="z swiper-slide">
       <div class="text-center text-dark fw-normal fs-6">
-        <img src="images/58.png" alt="Ünlü Kadın"
+        <img src="images/ogretmen.jpeg" alt="Ünlü Kadın"
           style="border-radius: 50%; height: 100px; width: 100px; margin-left: 350px;margin-top: 30px;">
         <div class="fs-6 px-5 mt-3">
           Türkiye'nin her tarafından tüm ülkeye emek dağıtan girişimciler, yaratıcılığınız ve kararlılığınızla dünyayı değiştiriyorsunuz. Başarılarınızla gurur duyuyoruz.
@@ -584,7 +588,7 @@ try {
     </div>
     <div class="z swiper-slide">
       <div class="text-center text-dark fw-normal fs-6">
-        <img src="images/yorum.jpg" alt="Ünlü Kadın"
+        <img src="images/kadin_ceo.jpeg" alt="Ünlü Kadın"
           style="border-radius: 50%; height: 100px; width: 100px; margin-left: 350px;margin-top: 30px;">
         <div class="fs-6 px-5 mt-3">
           Kendi işini kuran girişimci kadınlar, sizler ilham kaynağısınız. Azminiz ve çalışkanlığınızla geleceğe yön veriyorsunuz.
@@ -606,7 +610,7 @@ try {
     </div>
     <div class="z swiper-slide">
       <div class="text-center text-dark fw-normal fs-6">
-        <img src="images/yorum2.jpg" alt="Ünlü Kadın"
+        <img src="images/ciftci.jpeg" alt="Ünlü Kadın"
           style="border-radius: 50%; height: 100px; width: 100px; margin-left: 350px;margin-top: 30px;">
         <div class="fs-6 px-5 mt-3">
           Değerli girişimciler, cesaretiniz ve yenilikçi ruhunuzla gurur duyuyoruz. Sizler, geleceğin liderlerisiniz.
@@ -657,29 +661,34 @@ try {
           <p>Başarı Hikayeleri</p>
         </div>
         <div class="col-lg-3 mb-4">
-          <div class="container rounded-4 text-center p-4"
-            style="background-color: rgba(255, 255, 255, 0.2); height: 100%; width: 400px;">
-            <img class="rounded-4 mb-3" src="images/63.png" style="width: 100%; height: auto;">
-            <div class="d-flex justify-content-center">
-              <input type="email" class="rounded-3 border-0" placeholder="E-posta adresinizi girin"
-                style="height: 50px; padding-left: 10px; width: 60%;">
-              <button class="rounded-3 border-0 bg-danger text-white ml-2" type="button"
-                style="height: 50px; width: 35%;">Abone Ol</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="container d-flex flex-column flex-lg-row justify-content-between align-items-center text-white"
-        style="z-index: 2; background-color: transparent; margin-top: 20px; padding: 20px; width: 90%;">
-        <div class="d-flex align-items-center mb-3 mb-lg-0">
-          <img src="images/yeni_logo.png" alt="Logo" width="60" height="60" class="d-inline-block align-text-top">
-          <div class="baslik ml-3" style="font-size: 40px;">ETİCARET</div>
-        </div>
+  <div class="container rounded-4 text-center p-4 shadow-sm"
+    style="background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.15)); backdrop-filter: blur(10px); height: 100%; max-width: 400px;">
+    
+    <img class="rounded-4 mb-3 shadow" src="images/atomcayi.jpg" alt="El Yapımı Kurabiye"
+      style="width: 100%; height: auto; object-fit: cover;">
+
+    <p class="fw-semibold mb-3">Özel kampanyalardan ve indirimlerden haberdar olun!</p>
+    
+    <div class="d-flex justify-content-between align-items-center gap-2">
+      <input type="email" class="form-control rounded-3 border-0 shadow-sm"
+        placeholder="E-posta adresinizi girin"
+        style="height: 50px; padding-left: 15px; background-color: #fff;">
+      
+      <button class="btn btn-danger rounded-3 shadow-sm px-3 fw-semibold"
+        type="button" style="height: 50px;">
+        Abone Ol
+      </button>
+    </div>
+  </div>
+</div>
+
+
         <div class="d-flex flex-column flex-lg-row align-items-center mb-3 mb-lg-0">
-          <p class="mb-0">Şartlar</p>
-          <p class="mb-0 ml-lg-3">Gizlilik</p>
-          <p class="mb-0 ml-lg-3">Çerezler</p>
-        </div>
+  <p class="mb-0">Şartlar</p>
+  <p class="mb-0 ms-lg-4">Gizlilik</p>
+  <p class="mb-0 ms-lg-4">Çerezler</p>
+</div>
+
         <div class="d-flex align-items-center">
           <i class="icon bi bi-facebook mr-3"></i>
           <i class="icon bi bi-linkedin mr-3"></i>
