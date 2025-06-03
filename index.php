@@ -49,15 +49,15 @@ try {
 </head>
 
 <body>
-  <nav class="navbar  navbar-expand-lg navbar-dark" style="background-color:rgb(155, 10, 109) ; ">
+  <nav class="navbar  navbar-expand-lg navbar-dark" style="background-color:rgb(91, 140, 213) ; ">
     <div class="container-fluid">
 
       <a class="navbar-brand d-flex ms-4" href="#" style="margin-left: 5px;">
-        <img src="images/logo.png" alt="Logo" width="35" height="35" class="align-text-top">
+        <img src="images/yeni_logo.png" alt="Logo" width="40" height="40" class="align-text-top">
 
         <div class="baslik fs-3">
           <a class="dropdown-item" href="index.php">
-            EL EMEK
+            ETİCARET
           </a>
         </div>
       </a>
@@ -191,7 +191,7 @@ try {
       </div>
       <div class="position-absolute top-50  start-50 translate-middle w-50" style="margin-top: -70px;">
         <div class="text-center">
-          <div class="text-center fw-bold mb-3" style="color: black; font-size: 1vw;">Düşle, İnan , Başar</div>
+          <div class="text-center fw-bold mb-3" style="color: black; font-size: 1vw;">DÜŞLE, İNAN , BAŞAR</div>
           <div class="baslik2" style="color: black; font-size: 4vw;">El İşçiliğiyle Üretilmiş, Emeğe Saygı Duyanların Tercihi</div>
           
         </div>
@@ -206,7 +206,7 @@ try {
           
         <div class="swiper-slide tranding-slide">
             <div class="tranding-slide-img">
-              <img src="images/salca.jpg" alt="Tranding">
+              <img src="images/çini.png" alt="Tranding">
             </div>
           </div>
 
@@ -231,20 +231,20 @@ try {
 
           <div class="swiper-slide tranding-slide">
             <div class="tranding-slide-img">
-              <img src="images/sarma.jpg" alt="Tranding">
+              <img src="images/çini.png" alt="Tranding">
             </div>
           </div>
 
           <div class="swiper-slide tranding-slide">
             <div class="tranding-slide-img">
-              <img src="images/kozmetik.jpg" alt="Tranding">
+              <img src="images/ahşap.png" alt="Tranding">
             </div>
 
           </div>
 
           <div class="swiper-slide tranding-slide">
             <div class="tranding-slide-img">
-              <img src="images/orgucanta.jpg" alt="Tranding">
+              <img src="images/dokuma.png" alt="Tranding">
             </div>
 
           </div>
@@ -302,7 +302,7 @@ try {
   <div class="container-fluid mt-5 bg-light py-5 ms-4">
   <div class="row">
     <div class="col-12 col-md-5 text-center py-5">
-      <div class="text-start" style="color:rgb(155, 10, 109) ;">El Emeği Ürünlerin Hikayesine Ortak Olun</div>
+      <div class="text-start" style="color:rgb(91, 140, 213) ;">El Emeği Ürünlerin Hikayesine Ortak Olun</div>
       <div class="baslik3 text-start text-black fw-bold" style="font-size: 3vw;">Yeni Ürünlerimizi Deneyin</div>
 
       <div class="text-start">Geleneksel değerlerle modern tasarım anlayışını bir araya getiren bu e-ticaret deneyimi, sadece alışveriş yapmakla kalmayıp, zanaatın ruhunu keşfetmenize olanak tanır. Keşfedin, ilham alın ve emeğe değer katın.</div>
@@ -310,22 +310,22 @@ try {
     <div class="col-12 col-md-7">
       <div class="swiper ilk">
         <div class="swiper-wrapper mb-5">
-          <div class="k swiper-slide iki"><img class="img" src="images/taki.jpg">
+          <div class="k swiper-slide iki"><img class="img" src="images/çini.png">
             <div class="text-overlay">Seramik ve Çini</div>
           </div>
-          <div class="k swiper-slide iki"><img class="img" src="images/kozmetik.jpg">
+          <div class="k swiper-slide iki"><img class="img" src="images/ahşap.png">
             <div class="text-overlay">Ahşap Ürünler</div>
           </div>
-          <div class="k swiper-slide iki"><img class="img" src="images/dogalsabun.jpg">
+          <div class="k swiper-slide iki"><img class="img" src="images/dokuma.png">
             <div class="text-overlay">Dokuma Ürünler</div>
           </div>
-          <div class="k swiper-slide iki"><img class="img" src="images/orgu.jpg">
+          <div class="k swiper-slide iki"><img class="img" src="images/taki.jpg">
             <div class="text-overlay">Takılar ve Aksesuarlar</div>
           </div>
-          <div class="k swiper-slide iki"><img class="img" src="images/recel.jpg">
+          <div class="k swiper-slide iki"><img class="img" src="images/deri.png">
             <div class="text-overlay">Deri Ürünler</div>
           </div>
-          <div class="k swiper-slide iki"><img class="img" src="images/orgucanta.jpg">
+          <div class="k swiper-slide iki"><img class="img" src="images/metal işler.png">
             <div class="text-overlay">Metal İşleri</div>
           </div>
           <div class="k swiper-slide iki"><img class="img" src="images/bakim.jpg">
@@ -334,7 +334,7 @@ try {
           <div class="k swiper-slide iki"><img class="img" src="images/dekormum.jpg">
             <div class="text-overlay">El Yapımı Sabun ve Kozmetik Ürünleri</div>
           </div>
-          <div class="k swiper-slide iki"><img class="img" src="images/gingercookie.jpg">
+          <div class="k swiper-slide iki"><img class="img" src="images/organik ürünler.png">
             <div class="text-overlay">Organik Gıda Ürünleri</div>
           </div>
         </div>
@@ -344,11 +344,11 @@ try {
 </div>
 <div class="container-fluid  mt-5">
     <div class="text-center">
-      <div style="color:rgb(155, 10, 109) ;">
-        Satışta Olan Ürünlerimiz
+      <div style="color:rgb(91, 140, 213) ;">
+        Popüler Olan Ürünlerimiz
       </div>
       <div class="baslik3 " style="font-size: 50px;">
-        Popüler Ürünler
+        Sepetinizdeki Ürünler
       </div>
     </div>
   </div>
@@ -367,7 +367,7 @@ try {
                 </div>
                 <div class="col-6">
                   <div class="baslik3 fw-bold" style="font-size: 21px;"><?= htmlspecialchars($urun['Urun_Adi']) ?></div>
-                  <div class="starts" style="color:rgb(155, 10, 109) ;">
+                  <div class="starts" style="color:rgb(91, 140, 213) ;">
                     <i class="bi bi-star-fill"></i>
                     <i class="bi bi-star-fill"></i>
                     <i class="bi bi-star-fill"></i>
@@ -396,9 +396,9 @@ try {
               </div>
             </div>
           </div>
-        <?php endforeach; ?>
+<?php endforeach; ?>
       <?php else: ?>
-        <p class="text-center">Şu anda satışta olan ürün bulunmamaktadır.</p>
+        <p class="text-center">Şu anda sepetinizde ürün bulunmamaktadır.</p>
       <?php endif; ?>
     </div>
   </div>
@@ -406,26 +406,26 @@ try {
   <div class="row">
     <div class="col-12 col-md-6">
       <div class="d-flex" style="margin-left: 70px;">
-        <img src="images/dogalsabun.jpg" style="width: 400px; height: 450px; border-radius: 5%;">
-        <img src="images/orgucanta.jpg"
-          style="width: 260px; height: 300px; border-radius: 5%; margin-left: -180px; margin-top: 100px;">
+        <img src="images/ahşap.png" style="width: 400px; height: 450px; border-radius: 5%;">
+        <img src="images/dekormum.jpg"
+          style="width: 280px; height: 350px; border-radius: 5%; margin-left: -180px; margin-top: 100px;">
       </div>
     </div>
     <div class="col-12 col-md-6 px-5 mt-4">
-      <div class="text-start" style="color:rgb(155, 10, 109) ;">Hakkımızda</div>
+      <div class="text-start" style="color:rgb(91, 140, 213) ;">Hakkımızda</div>
       <div class="baslik3 text-start text-black fw-bold" style="font-size: 3vw;">Başarıya Giden Yolculuğumuz: Emekçilerimizin Özverisi.</div>
       <div class="text-start">Emekçi girişimcilerimizin azmi ve yaratıcılığı ile dolu bir yolculuk. Her biri kendi alanında fark yaratan Türkiye'nin dört bir yanındaki emekçinin hikayeleri.</div>
       <div class="row">
         <div class="col-6 border-end" style="margin-top: 20px;">
           <div class="mb-2">
-            <i class="bi bi-check-circle" style="color:rgb(155, 10, 109) ;"></i> Sıcak ve Samimi Ortam
+            <i class="bi bi-check-circle" style="color:rgb(91, 140, 213) ;"></i> Sıcak ve Samimi Ortam
           </div>
           <div class="mb-4">
-            <i class="bi bi-check-circle" style="color:rgb(155, 10, 109) ;"></i> Girişimciler İçin İlham Verici Hikayeler
+            <i class="bi bi-check-circle" style="color:rgb(91, 140, 213) ;"></i> Girişimciler İçin İlham Verici Hikayeler
           </div>
           <div>
             <button type="button" class="btn ms-2 text-white"
-              style="background-color:rgb(155, 10, 109) ;border-radius: 20; height: 40px; width: 150px;margin-top: 50px;">Daha Fazla Bilgi</button>
+              style="background-color:rgb(91, 140, 213) ;border-radius: 20; height: 40px; width: 150px;margin-top: 50px;">Daha Fazla Bilgi</button>
           </div>
         </div>
 
@@ -450,7 +450,7 @@ try {
       Girişimcilerden %50'den Fazla İndirim
       <div>
         <button type="button" class="btn ms-2 text-white"
-          style="background-color:rgb(155, 10, 109) ;border-radius: 20; height: 40px; width: 120px;margin-top: 0px;">Hemen Al</button>
+          style="background-color:rgb(91, 140, 213) ;border-radius: 20; height: 40px; width: 120px;margin-top: 0px;">Hemen Al</button>
       </div>
     </div>
     <div class="col-6 text-white p-5">
@@ -482,7 +482,7 @@ try {
 </div>
 <div class="container-fluid  mt-5">
     <div class="text-center">
-      <div style="color:rgb(155, 10, 109) ;">
+      <div style="color:rgb(91, 140, 213) ;">
         Emekçi Kadınlarımız
       </div>
       <div class="baslik3 " style="font-size: 50px;">
@@ -499,10 +499,10 @@ try {
           <div class="baslik3 text-center fs-4 fw-bold mt-3">
             Ayşe Türkmen, Muğla
           </div>
-          <div class="text-center" style="font-size: 13px; color:rgb(155, 10, 109) ;">
+          <div class="text-center" style="font-size: 13px; color:rgb(91, 140, 213) ;">
             Ev Hanımı
           </div>
-          <div class="text-center mt-2" style="color:rgb(155, 10, 109) ;">
+          <div class="text-center mt-2" style="color:rgb(91, 140, 213) ;">
             <i class="bi bi-facebook  mx-2"></i>
             <i class="bi bi-linkedin mx-2"></i>
             <i class="bi bi-instagram mx-2"></i>
@@ -515,10 +515,10 @@ try {
           <div class="baslik3 text-center fs-4 fw-bold mt-3">
             Zeynep Nuriye Tekin, Bilecik
           </div>
-          <div class="text-center" style="font-size: 13px; color:rgb(155, 10, 109) ;">
+          <div class="text-center" style="font-size: 13px; color:rgb(91, 140, 213) ;">
             Yazılım Mühendisi
           </div>
-          <div class="text-center mt-2 " style="color:rgb(155, 10, 109) ;">
+          <div class="text-center mt-2 " style="color:rgb(91, 140, 213) ;">
             <i class="bi bi-facebook  mx-2"></i>
             <i class="bi bi-linkedin mx-2"></i>
             <i class="bi bi-instagram mx-2"></i>
@@ -531,10 +531,10 @@ try {
           <div class="baslik3 text-center fs-4 fw-bold mt-3">
             Seher Yılmaz, Burdur
           </div>
-          <div class="text-center" style="font-size: 13px; color:rgb(155, 10, 109) ;">
+          <div class="text-center" style="font-size: 13px; color:rgb(91, 140, 213) ;">
             Takı Tasarımcısı
           </div>
-          <div class="text-center mt-2" style="color:rgb(155, 10, 109) ;">
+          <div class="text-center mt-2" style="color:rgb(91, 140, 213) ;">
             <i class="bi bi-facebook  mx-2"></i>
             <i class="bi bi-linkedin mx-2"></i>
             <i class="bi bi-instagram mx-2"></i>
@@ -545,11 +545,11 @@ try {
   </div>
   <div class="container text-center">
     <button type="button" class="btn ms-2 mt-5 mb-5 "
-      style="border-color:rgb(155, 10, 109) ;border-radius: 20; height: 40px; width: 120px;margin-top: 13px;color:rgb(155, 10, 109) ;"> Daha fazla</button>
+      style="border-color:rgb(91, 140, 213) ;border-radius: 20; height: 40px; width: 120px;margin-top: 13px;color:rgb(91, 140, 213) ;"> Daha fazla</button>
   </div>
   <div class="container p-0 mt-5">
   <div class="text-center">
-    <div style="color:rgb(155, 10, 109) ;">
+    <div style="color:rgb(91, 140, 213) ;">
       Yorumlar
     </div>
     <div class="baslik3" style="font-size: 50px;">
@@ -573,7 +573,7 @@ try {
         <div class="px-5 mt-1">
           Öğretmen
         </div>
-        <div class="starts mx-3 mt-1" style="color:rgb(155, 10, 109) ;">
+        <div class="starts mx-3 mt-1" style="color:rgb(91, 140, 213) ;">
           <i class="bi bi-star-fill"></i>
           <i class="bi bi-star-fill"></i>
           <i class="bi bi-star-fill"></i>
@@ -595,7 +595,7 @@ try {
         <div class="px-5 mt-1">
           CEO, Tech Innovators
         </div>
-        <div class="starts mx-3 mt-1" style="color:rgb(155, 10, 109) ;">
+        <div class="starts mx-3 mt-1" style="color:rgb(91, 140, 213) ;">
           <i class="bi bi-star-fill"></i>
           <i class="bi bi-star-fill"></i>
           <i class="bi bi-star-fill"></i>
@@ -617,7 +617,7 @@ try {
         <div class="px-5 mt-1">
           Çiftçi
         </div>
-        <div class="starts mx-3 mt-1" style="color:rgb(155, 10, 109) ;">
+        <div class="starts mx-3 mt-1" style="color:rgb(91, 140, 213) ;">
           <i class="bi bi-star-fill"></i>
           <i class="bi bi-star-fill"></i>
           <i class="bi bi-star-fill"></i>
@@ -672,8 +672,8 @@ try {
       <div class="container d-flex flex-column flex-lg-row justify-content-between align-items-center text-white"
         style="z-index: 2; background-color: transparent; margin-top: 20px; padding: 20px; width: 90%;">
         <div class="d-flex align-items-center mb-3 mb-lg-0">
-          <img src="images/chef.png" alt="Logo" width="60" height="60" class="d-inline-block align-text-top">
-          <div class="baslik ml-3" style="font-size: 40px;">El Emek</div>
+          <img src="images/yeni_logo.png" alt="Logo" width="60" height="60" class="d-inline-block align-text-top">
+          <div class="baslik ml-3" style="font-size: 40px;">ETİCARET</div>
         </div>
         <div class="d-flex flex-column flex-lg-row align-items-center mb-3 mb-lg-0">
           <p class="mb-0">Şartlar</p>

@@ -28,7 +28,7 @@
             z-index: 10;
         }
         h1 {
-            color:rgb(155, 10, 109) ;
+            color:rgb(91, 140, 213) ;
             font-size: 2.5em;
             margin-bottom: 20px;
         }
