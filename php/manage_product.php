@@ -322,7 +322,7 @@ if ($satici_id !== null) {
     <div class="container-fluid">
         <a class="navbar-brand d-flex ms-4" href="#" style="margin-left: 5px;">
          
-            <div class="baslik fs-3"> ELEMEK</div>
+            <div class="baslik fs-3"> ETİCARET</div>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
