@@ -12,6 +12,6 @@ session_destroy();
 session_write_close();
 
 // Redirect to the homepage
-header("Location: /El-Emek/index.php");
+header("Location: /eticaret/index.php");
 exit(); // Stop script execution after redirection
 

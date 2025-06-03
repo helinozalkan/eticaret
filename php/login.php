@@ -43,16 +43,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     // Rol tabanlı yönlendirme
                     switch ($user['role']) {
                         case 'admin':
-                            header("Location: /El-Emek/php/admin_dashboard.php");
+                            header("Location: /eticaret/php/admin_dashboard.php");
                             break;
                         case 'seller':
-                            header("Location: /El-Emek/php/seller_dashboard.php");
+                            header("Location: /eticaret/php/seller_dashboard.php");
                             break;
                         case 'customer':
-                            header("Location: /El-Emek/index.php");
+                            header("Location: /eticaret/index.php");
                             break;
                         default:
-                            header("Location: /El-Emek/index.php"); // Varsayılan yönlendirme
+                            header("Location: /eticaret/index.php"); // Varsayılan yönlendirme
                             break;
                     }
                     exit(); // Yönlendirmeden sonra betiğin çalışmasını durdur
