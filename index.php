@@ -105,7 +105,7 @@ try {
             </button>
             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
               <a class="dropdown-item" href="php/seller_register.php">Satıcı oluştur</a>
-              <a class="dropdown-item" href="php/motivation.php">CEO'dan Mesaj Var</a>
+              <a class="dropdown-item" href="php/motivation.php">Eticaret Ekibinden Mesaj Var</a>
               <a class="dropdown-item" href="#">Kategoriler</a>
               <a class="dropdown-item" href="#">Özellikler</a>
               <a class="dropdown-item" href="#">Satıcı Profili</a>
@@ -192,7 +192,7 @@ try {
       <div class="position-absolute top-50  start-50 translate-middle w-50" style="margin-top: -70px;">
         <div class="text-center">
           <div class="text-center fw-bold mb-3" style="color: black; font-size: 1vw;">Düşle, İnan , Başar</div>
-          <div class="baslik2" style="color: black; font-size: 4vw;">Kendi Ayakları Üzerinde Durabilen, Güçlü Kadınların Tercihi</div>
+          <div class="baslik2" style="color: black; font-size: 4vw;">El İşçiliğiyle Üretilmiş, Emeğe Saygı Duyanların Tercihi</div>
           
         </div>
       </div>
@@ -280,7 +280,7 @@ try {
     <span class="num" data-value="50">00</span>
     <span style="margin-top: 40px;">+</span>
   </div>
-  <span class="text">Kadın Girişimci</span>
+  <span class="text">Emekçi</span>
 </div>
 <div class="container border-end border-warning col-12 col-lg-3 text-center">
   <div class="sayac d-flex" style="padding-left: 100px;">
@@ -300,36 +300,36 @@ try {
   <div class="container-fluid mt-5 bg-light py-5 ms-4">
   <div class="row">
     <div class="col-12 col-md-5 text-center py-5">
-      <div class="text-start" style="color:rgb(155, 10, 109) ;">Yeni Ürünler</div>
+      <div class="text-start" style="color:rgb(155, 10, 109) ;">El Emeği Ürünlerin Hikayesine Ortak Olun</div>
       <div class="baslik3 text-start text-black fw-bold" style="font-size: 3vw;">Yeni Ürünlerimizi Deneyin</div>
-      <div class="text-start">Kadın girişimcilerimizin el emeği göz nuru ürünleriyle tanışın. Her biri özenle hazırlanmış ve sizler için sunulmuştur.</div>
+      <div class="text-start">eleneksel değerlerle modern tasarım anlayışını bir araya getiren bu e-ticaret deneyimi, sadece alışveriş yapmakla kalmayıp, zanaatın ruhunu keşfetmenize olanak tanır. Keşfedin, ilham alın ve emeğe değer katın.</div>
     </div>
     <div class="col-12 col-md-7">
       <div class="swiper ilk">
         <div class="swiper-wrapper mb-5">
           <div class="k swiper-slide iki"><img class="img" src="images/taki.jpg">
-            <div class="text-overlay">El Yapımı Takılar</div>
+            <div class="text-overlay">Seramik ve Çini</div>
           </div>
           <div class="k swiper-slide iki"><img class="img" src="images/kozmetik.jpg">
-            <div class="text-overlay">Organik Kozmetik Ürünleri</div>
+            <div class="text-overlay">Ahşap Ürünler</div>
           </div>
           <div class="k swiper-slide iki"><img class="img" src="images/dogalsabun.jpg">
-            <div class="text-overlay">Doğal Sabunlar</div>
+            <div class="text-overlay">Dokuma Ürünler</div>
           </div>
           <div class="k swiper-slide iki"><img class="img" src="images/orgu.jpg">
-            <div class="text-overlay">El Örgüsü Ürünler</div>
+            <div class="text-overlay">Takılar ve Aksesuarlar</div>
           </div>
           <div class="k swiper-slide iki"><img class="img" src="images/recel.jpg">
-            <div class="text-overlay">Ev Yapımı Reçeller</div>
+            <div class="text-overlay">Deri Ürünler</div>
           </div>
           <div class="k swiper-slide iki"><img class="img" src="images/orgucanta.jpg">
-            <div class="text-overlay">El Yapımı Çantalar</div>
+            <div class="text-overlay">Metal İşleri</div>
           </div>
           <div class="k swiper-slide iki"><img class="img" src="images/bakim.jpg">
             <div class="text-overlay">Doğal Cilt Bakım Ürünleri</div>
           </div>
           <div class="k swiper-slide iki"><img class="img" src="images/dekormum.jpg">
-            <div class="text-overlay">El Yapımı Mumlar</div>
+            <div class="text-overlay">El Yapımı Sabun ve Kozmetik Ürünleri</div>
           </div>
           <div class="k swiper-slide iki"><img class="img" src="images/gingercookie.jpg">
             <div class="text-overlay">Organik Gıda Ürünleri</div>
@@ -410,15 +410,15 @@ try {
     </div>
     <div class="col-12 col-md-6 px-5 mt-4">
       <div class="text-start" style="color:rgb(155, 10, 109) ;">Hakkımızda</div>
-      <div class="baslik3 text-start text-black fw-bold" style="font-size: 3vw;">Başarıya Giden Yolculuğumuz. Kadın Girişimcilerin Hikayesi</div>
-      <div class="text-start">Kadın girişimcilerimizin azmi ve yaratıcılığı ile dolu bir yolculuk. Her biri kendi alanında fark yaratan kadınların hikayeleri.</div>
+      <div class="baslik3 text-start text-black fw-bold" style="font-size: 3vw;">Başarıya Giden Yolculuğumuz: Emekçilerimizin Özverisi.</div>
+      <div class="text-start">Emekçi girişimcilerimizin azmi ve yaratıcılığı ile dolu bir yolculuk. Her biri kendi alanında fark yaratan Türkiye'nin dört bir yanındaki emekçinin hikayeleri.</div>
       <div class="row">
         <div class="col-6 border-end" style="margin-top: 20px;">
           <div class="mb-2">
             <i class="bi bi-check-circle" style="color:rgb(155, 10, 109) ;"></i> Sıcak ve Samimi Ortam
           </div>
           <div class="mb-4">
-            <i class="bi bi-check-circle" style="color:rgb(155, 10, 109) ;"></i> Kadın Girişimciler İçin İlham Verici Hikayeler
+            <i class="bi bi-check-circle" style="color:rgb(155, 10, 109) ;"></i> Girişimciler İçin İlham Verici Hikayeler
           </div>
           <div>
             <button type="button" class="btn ms-2 text-white"
@@ -431,7 +431,7 @@ try {
             style="border-radius: 50%; height: 70px; width: 70px; margin-left: 10px;">
           <div class="ms-3">
             <div>Zeynep Tekin</div>
-            <div style="color: rgb(105, 101, 101); font-weight: bold; font-size: 12px;">Kurucu & CEO</div>
+            <div style="color: rgb(105, 101, 101); font-weight: bold; font-size: 12px;">Eticaret Ekibi</div>
           </div>
         </div>
       </div>
@@ -442,7 +442,7 @@ try {
 <div class="container-fluid p-0 bg-dark mt-5" style="min-height: 200px; max-height: 50vh; height: auto;">
   <div class="row">
     <div class="baslik3 col-6 text-white p-5" style="font-weight:bold; font-size: 45px;">
-      Kadın Girişimcilerden %50'den Fazla İndirim
+      Girişimcilerden %50'den Fazla İndirim
       <div>
         <button type="button" class="btn ms-2 text-white"
           style="background-color:rgb(155, 10, 109) ;border-radius: 20; height: 40px; width: 120px;margin-top: 0px;">Hemen Al</button>
@@ -492,10 +492,10 @@ try {
         <div class=" b bg-light rounded-4 bg-white " style=" height: 410px; width: 350px;">
           <img src="images/kevser.jpeg " class="img-b rounded-top-4" style=" height: 300px; width: 350px;">
           <div class="baslik3 text-center fs-4 fw-bold mt-3">
-            Kevser Semiz
+            Ayşe Türkmen, Muğla
           </div>
           <div class="text-center" style="font-size: 13px; color:rgb(155, 10, 109) ;">
-            Yazılım Mühendisi
+            Ev Hanımı
           </div>
           <div class="text-center mt-2" style="color:rgb(155, 10, 109) ;">
             <i class="bi bi-facebook  mx-2"></i>
@@ -508,7 +508,7 @@ try {
         <div class=" b bg-light rounded-4 bg-white" style=" height: 410px; width: 350px;">
           <img src="images/zey.jpeg " class="img-b rounded-top-4" style=" height: 300px; width: 350px;">
           <div class="baslik3 text-center fs-4 fw-bold mt-3">
-            Zeynep Nuriye Tekin
+            Zeynep Nuriye Tekin, Balıkesir
           </div>
           <div class="text-center" style="font-size: 13px; color:rgb(155, 10, 109) ;">
             Yazılım Mühendisi
@@ -524,10 +524,10 @@ try {
         <div class=" b bg-light rounded-4 bg-white" style=" height: 410px; width: 350px;">
           <img src="images/fatma.png " class="img-b rounded-top-4" style=" height: 300px; width: 350px;">
           <div class="baslik3 text-center fs-4 fw-bold mt-3">
-            Fatma Hümeyra Gül
+            Seher Yılmaz, Burdur
           </div>
           <div class="text-center" style="font-size: 13px; color:rgb(155, 10, 109) ;">
-            Yazılım Mühendisi
+            Takı Tasarımcısı
           </div>
           <div class="text-center mt-2" style="color:rgb(155, 10, 109) ;">
             <i class="bi bi-facebook  mx-2"></i>
@@ -548,7 +548,7 @@ try {
       Yorumlar
     </div>
     <div class="baslik3" style="font-size: 50px;">
-      Ünlü Kadınlardan Yorumlar
+      Girişimcilerde Gelen Yorumlar
     </div>
   </div>
 </div>
@@ -560,13 +560,13 @@ try {
         <img src="images/58.png" alt="Ünlü Kadın"
           style="border-radius: 50%; height: 100px; width: 100px; margin-left: 350px;margin-top: 30px;">
         <div class="fs-6 px-5 mt-3">
-          Kadın girişimciler, yaratıcılığınız ve kararlılığınızla dünyayı değiştiriyorsunuz. Başarılarınızla gurur duyuyoruz.
+          Türkiye'nin her tarafından tüm ülkeye emek dağıtan girişimciler, yaratıcılığınız ve kararlılığınızla dünyayı değiştiriyorsunuz. Başarılarınızla gurur duyuyoruz.
         </div>
         <div class="baslik3 fw-bold fs-4 mt-4">
-          Ezgi Gerçek
+          Ahmet Gerçek
         </div>
         <div class="px-5 mt-1">
-          Sosyal Medya Uzmanı
+          Öğretmen
         </div>
         <div class="starts mx-3 mt-1" style="color:rgb(155, 10, 109) ;">
           <i class="bi bi-star-fill"></i>
@@ -604,10 +604,10 @@ try {
         <img src="images/yorum2.jpg" alt="Ünlü Kadın"
           style="border-radius: 50%; height: 100px; width: 100px; margin-left: 350px;margin-top: 30px;">
         <div class="fs-6 px-5 mt-3">
-          Kadın girişimciler, cesaretiniz ve yenilikçi ruhunuzla gurur duyuyoruz. Sizler, geleceğin liderlerisiniz.
+          Değerli girişimciler, cesaretiniz ve yenilikçi ruhunuzla gurur duyuyoruz. Sizler, geleceğin liderlerisiniz.
         </div>
         <div class="baslik3 fw-bold fs-4 mt-4">
-          Emel Yıldız
+          Ali Yıldız
         </div>
         <div class="px-5 mt-1">
           Tasarım Uzmanı
@@ -631,12 +631,12 @@ try {
         style="z-index: 2; background-color: transparent; padding: 20px; margin-top: 20px; width: 90%;">
         <div class="col-lg-3 mb-4">
           <h4>Ürünler</h4>
-          <p>El Yapımı Takılar</p>
+          <p>Seramik ve Çini</p>
           <p>Organik Kozmetik</p>
-          <p>Doğal Sabunlar</p>
+          <p>Ahşap Ürünler</p>
           <p>El Örgüsü Ürünler</p>
-          <p>Ev Yapımı Reçeller</p>
-          <p>El Yapımı Çantalar</p>
+          <p>Metal İşleri</p>
+          <p>El Yapımı Sabun ve Kozmetik Ürünleri</p>
         </div>
         <div class="col-lg-3 mb-4">
           <h4>Bilgi</h4>
