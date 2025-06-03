@@ -1,0 +1,488 @@
+html, body {
+    overflow-x: hidden;
+}
+        .slideshow {
+            position: relative;
+            width: 100%;
+            height: 100vh; /* Tam ekran yüksekliği */
+            overflow: hidden; /* Taşmaları gizle */
+        }
+
+        .slide-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%; /* Tam yükseklik */
+            object-fit: cover; /* Görsellerin kapsayıcıya uyacak şekilde kesilmesini sağlar */
+            opacity: 0; /* Başlangıçta görünmez */
+            animation: slide 10s infinite;
+        }
+
+        .slide-img:nth-child(1) {
+            animation-delay: 0s; /* İlk resim hemen başlar */
+        }
+
+        .slide-img:nth-child(2) {
+            animation-delay: 5s; /* İkinci resim 5 saniye sonra başlar */
+        }
+
+        @keyframes slide {
+            0% {
+                opacity: 0;
+            }
+            25% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 1;
+            }
+            75% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+        .baslik2{
+            font-family:"Edu+AU+VIC+WA+NT+Hand:wght@400..700&family=Montserrat:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Slab:wght@100..900&display=swap";
+            font-weight: bold;
+            line-height: 50px;
+        }
+        .baslik{
+            font-family:"Courgette";
+            font-weight: bolder;
+        }
+        .baslik3{
+            font-family:"Edu+AU+VIC+WA+NT+Hand:wght@400..700&family=Montserrat:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Slab:wght@100..900&display=swap";
+        }
+        
+        span.num{
+            display: grid;
+            place-items: center;
+            font-weight:600;
+            font-size:4em;
+            font-family:"Edu+AU+VIC+WA+NT+Hand:wght@400..700&family=Montserrat:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Slab:wght@100..900&display=swap";
+        }
+        span.text{
+            font-size: 20px;
+            text-align: center;
+            pad: 0.7em 0;
+            line-height: 0;
+            font-family:"Edu+AU+VIC+WA+NT+Hand:wght@400..700&family=Montserrat:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Slab:wght@100..900&display=swap";
+            margin-top: 10px;
+        }
+        .wrapper {
+    display: flex;
+    margin-top: -450px;
+    margin-bottom: 80px;
+    flex-wrap: wrap; /* Ekran küçüldüğünde öğelerin sarılmasına izin ver */
+}
+
+.wrapper .container {
+     /* Her container'ın genişliğini belirle (örneğin 4 tanesi yatayda sığsın) */
+    box-sizing: border-box;
+    background-color:white;
+    
+}
+
+@media (max-width: 768px) {
+    .wrapper {
+        flex-direction: column; /* Küçük ekranlarda container'ları alt alta sıralar */
+    }
+
+    .wrapper .container {
+        /* Container'ların tamamı ekran genişliğini kapsasın */
+        
+        margin-bottom: 10px; /* Alt alta geldiklerinde aralarına boşluk eklemek için */
+    }
+
+    .wrapper .container:last-child {
+        margin-bottom: 0; /* Son container için boşluk kaldırma */
+    }
+}
+.scroll-container {
+            display: flex;
+            overflow-x: scroll;
+            scroll-behavior: smooth;
+            scrollbar-width: none; 
+           
+        }
+        
+        .scroll-item {
+            
+            margin: 20px;
+            text-align: center;
+            
+           
+        }
+        .scroll-item:hover{
+           transform: imghvr-hinge-up;
+            
+        }
+        .genel {
+            
+    margin-top: -200px;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 400px; /* Yüksekliği düzenleyin */
+    overflow: hidden;
+    background-color: #ffffff;
+}
+
+
+.menu-container::-webkit-scrollbar {
+    display: none; /* Kaydırma çubuğunu gizle */
+}
+.container {
+    max-width: 100%;
+   
+  }
+  
+  .text-center {
+    text-align: center;
+  }
+  
+  .section-heading {
+    font-size: 3rem;
+    color: var(--primary);
+    padding: 2rem 0;
+  }
+  
+  #tranding {
+    
+    margin-top: -250px;
+  }
+  
+  @media (max-width:1440px) {
+    #tranding {
+     
+    }
+  }
+ 
+  
+  #tranding .tranding-slider {
+    height: 52rem;
+   
+    position: relative;
+    
+  }
+  
+  @media (max-width:500px) {
+    #tranding .tranding-slider {
+      height: 45rem;
+    }
+  }
+  
+  .tranding-slide {
+    width: 30rem;
+    height: 42rem;
+    position: relative;
+     /* Görseller arasındaki boşluğu ayarlayabilirsiniz */
+  }
+  
+  @media (max-width:500px) {
+    .tranding-slide {
+      width: 28rem !important;
+      height: 36rem !important;
+      
+    }
+    .tranding-slide .tranding-slide-img img {
+      width: 28rem !important;
+      height: 36rem !important;
+    }
+  }
+  
+  .tranding-slide .tranding-slide-img img {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    object-fit: cover;
+    z-index: 200;
+  }
+  
+  .tranding-slide .tranding-slide-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+  }
+  
+  .tranding-slide-content .food-price {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    color: var(--white);
+  }
+  
+  .tranding-slide-content .tranding-slide-content-bottom {
+    position: absolute;
+    bottom: 2rem;
+    left: 2rem;
+    color: var(--white);
+  }
+  
+  .food-rating {
+    padding-top: 1rem;
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .rating ion-icon {
+    color: var(--primary);
+  }
+  
+  .swiper-slide-shadow-left,
+  .swiper-slide-shadow-right {
+    display: none;
+  }
+  
+  .tranding-slider-control {
+    position: relative;
+    bottom: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .tranding-slider-control .swiper-button-next {
+    left: 58% !important;
+    transform: translateX(-58%) !important;
+  }
+  
+  @media (max-width:990px) {
+    .tranding-slider-control .swiper-button-next {
+      left: 70% !important;
+      transform: translateX(-70%) !important;
+    }
+  }
+  
+  @media (max-width:450px) {
+    .tranding-slider-control .swiper-button-next {
+      left: 80% !important;
+      transform: translateX(-80%) !important;
+    }
+  }
+  
+  @media (max-width:990px) {
+    .tranding-slider-control .swiper-button-prev {
+      left: 30% !important;
+      transform: translateX(-30%) !important;
+    }
+  }
+  
+  @media (max-width:450px) {
+    .tranding-slider-control .swiper-button-prev {
+      left: 20% !important;
+      transform: translateX(-20%) !important;
+    }
+  }
+  
+  .tranding-slider-control .slider-arrow {
+    background: var(--white);
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    left: 42%;
+    transform: translateX(-42%);
+    filter: drop-shadow(0px 8px 24px rgba(18, 28, 53, 0.1));
+  }
+  
+  .tranding-slider-control .slider-arrow ion-icon {
+    font-size: 2rem;
+    color: #222224;
+  }
+  
+  .tranding-slider-control .slider-arrow::after {
+    content: '';
+  }
+  
+  .tranding-slider-control .swiper-pagination {
+    position: relative;
+    width: 15rem;
+    bottom: 1rem;
+  }
+  
+  .tranding-slider-control .swiper-pagination .swiper-pagination-bullet {
+    filter: drop-shadow(0px 8px 24px rgba(18, 28, 53, 0.1));
+  }
+  
+  .tranding-slider-control .swiper-pagination .swiper-pagination-bullet-active {
+    background: var(--primary);
+  }
+  .ilk {
+    width: 100%;
+   
+  }
+  
+  .iki {
+    text-align: center;
+    font-size: 18px;
+    background: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10%;
+  }
+  
+  .swiper-slide img {
+    display: block;
+    width: 100%;
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Geçiş efektleri için */
+    object-fit: cover;
+  }
+  .img{
+    border-radius: 10%;
+    height: 300px;
+    margin-top: 5px;
+    margin-left: 6px;
+    
+  }
+  .swiper-slide {
+    position: relative; /* Metnin görüntünün üzerine gelmesi için */
+    
+  }
+  
+  .swiper-slide:hover .k {
+    box-shadow: 0px 0px 5px 5px rgba(0, 0, 0, 0.5); /* Gölge efekti */
+   
+   
+  }
+  
+  .text-overlay {
+    position: absolute;
+    bottom: -10px; /* Başlangıçta görüntü dışı */
+    left: 115px;
+   
+    transform: translateX(-50%);
+    color: white;
+    font-size: 24px;
+    background-color: rgba(0, 0, 0, 0.5); /* Yarı şeffaf siyah arka plan */
+    padding: 10px 55px;
+    border-radius: 20px;
+    opacity: 0;
+    transition: all 0.4s ease; /* Kayma ve opacity geçişi */
+  }
+  
+  .swiper-slide:hover .text-overlay {
+    opacity: 1; /* Fare üzerine geldiğinde yazıyı göster */
+    bottom: 2px; /* Görüntünün içine kayar */
+  }
+  .countdown {
+    display: flex;
+    gap: 5px; /* Divler arasındaki boşluk */
+    margin-left: -20px;
+  
+  }
+  .countdown div {
+    font-size: 33px; /* Yazı boyutunu ayarlamak için */
+  }
+  .fixed-size {
+    width: 80px;  /* Sabit genişlik */
+    height: 80px; /* Sabit yükseklik */
+    border-radius: 50%; /* Tam daire yapmak için */
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 24px;  /* Yazı boyutu */
+    color: white;  /* Yazı rengi */
+      
+  }
+  .a{
+    overflow: hidden; /* Taşmayı gizler */
+  }
+  .t{
+    overflow: hidden; /* Taşmayı gizler */
+    
+  }
+  .t:hover .img{
+    transform: scale(1.1); /* Büyütme oranını ihtiyaca göre ayarlayın */
+    transition: transform 0.3s ease; /* Büyüme geçiş süresi */
+    overflow: hidden; /* Taşmaları gizle */
+    
+  }
+  .a:hover .img-grow{
+    transform: scale(1.1); /* Büyütme oranını ihtiyaca göre ayarlayın */
+    transition: transform 0.3s ease; /* Büyüme geçiş süresi */
+    overflow: hidden; /* Taşmaları gizle */
+    
+  }
+  .a:hover .stars i {
+    color: rgb(250, 95, 75); /* Üzerine gelindiğinde yıldızların rengini değiştirir */
+    transition: color 0.3s ease; /* Renk geçiş süresi */
+    animation: pulse 1s infinite; /* Pulsasyon animasyonu ekler */
+    overflow: hidden; /* Taşmaları gizle */
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+  .b {
+    position: relative; /* Pozisyonlama için */
+    overflow: hidden; /* Taşmayı gizler */
+  }
+  .img-b {
+    transition: transform 0.3s ease; /* Geçiş süresi */
+  }
+  .b:hover .img-b {
+    animation: move 0.6s ease-in-out infinite; /* Hareket animasyonu */
+  }
+
+  @keyframes move {
+    0% {
+      transform: translateX(0);
+    }
+    50% {
+      transform: translateX(10px); /* Sağ tarafa hareket */
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+  
+    
+  .my {
+    width: 840px;
+    height: 350px;
+    overflow: hidden; /* Taşmaları gizle */
+    
+  }
+
+  .z {
+    overflow: hidden; /* Taşmaları gizle */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 18px;
+    font-size: 22px;
+    font-weight: bold;
+    color: #fff;
+    
+  }
+
+  .z:nth-child(1n) {
+    background-color: rgb(249, 244, 244);
+  }
+
+  .z:nth-child(2n) {
+    background-color: rgb(249, 244, 244);
+  }
+
+  .z:nth-child(3n) {
+    background-color: rgb(249, 244, 244);
+  }
+
+ 
+  
+  
+  
+
+ 
+
+
