@@ -1,5 +1,9 @@
 <?php
 //admin panel sayfası
+
+//burası benim değiştireceğim alan
+
+//şimdi githuba deneme commitii atıyrum
 session_start();
 include('../database.php');
 

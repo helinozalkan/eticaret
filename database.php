@@ -9,7 +9,7 @@ $username = "root";
 // Geliştirme ortamı için şimdilik boş bırakılabilir, ancak MySQL root kullanıcınız için güçlü bir şifre
 // belirlemeniz ve buraya o şifreyi yazmanız şiddetle tavsiye edilir.
 $password = "";
-$dbname = "elemekdb";
+$dbname = "eticaret";
 
 try {
     // PDO ile bağlantıyı oluştur
