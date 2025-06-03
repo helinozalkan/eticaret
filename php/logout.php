@@ -1,17 +1,23 @@
 <?php
-// Logout page
-session_start(); // Start the session
 
-// Unset all session variables
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
 $_SESSION = array();
 
-// Destroy the session
-session_destroy();
+if (ini_get("session.use_cookies")) {
+    $params = session_get_cookie_params();
+    setcookie(session_name(), '', time() - 42000, // Geçmiş bir zaman ayarlayarak çerezi geçersiz kıl
+        $params["path"],
+        $params["domain"],
+        $params["secure"],
+        $params["httponly"]
+    );
+}
 
-// Ensure session data is written and closed before redirection
-session_write_close();
+$redirect_url = "/eticaret/index.php"; // Ana sayfa varsayalım
+header("Location: " . $redirect_url);
 
-// Redirect to the homepage
-header("Location: /El-Emek/index.php");
-exit(); // Stop script execution after redirection
+exit();
 

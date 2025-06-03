@@ -1,5 +1,9 @@
 <?php
 //admin panel sayfası
+
+//burası benim değiştireceğim alan
+
+//şimdi githuba deneme commitii atıyrum
 session_start();
 include('../database.php');
 
@@ -46,7 +50,7 @@ $result = mysqli_query($conn, $query);
         
     <a class="navbar-brand d-flex ms-4" href="../index.php" style="margin-left: 5px;">
          
-            <div class="baslik fs-3"> ELEMEK</div>
+            <div class="baslik fs-3"> ETİCARET</div>
         </a>
 
                 

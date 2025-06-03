@@ -55,30 +55,29 @@
 </head>
 <body>
     <div class="container">
-        <h1>Değerli Kadın Girişimcilerimiz,</h1>
-        <p>
-            Sizler, cesaretiniz ve azminizle bu platformda yer alarak büyük bir adım attınız. Her birinizin hikayesi, 
-            ilham verici ve güçlendirici. Kendi işinizi kurarak, sadece kendiniz için değil, aynı zamanda çevrenizdeki 
-            diğer kadınlar için de bir umut ışığı oldunuz.
-        </p>
-        <p>
-            Bu yolculukta karşılaşacağınız zorluklar, sizi daha da güçlü kılacak. Her başarısızlık, bir öğrenme fırsatıdır 
-            ve her başarı, daha büyük hedeflere ulaşmanız için bir basamaktır. Unutmayın ki, sizler sadece birer girişimci 
-            değil, aynı zamanda geleceğin liderlerisiniz.
-        </p>
-        <p>
-            Ürünlerinizi bu platformda sergileyerek, yaratıcılığınızı ve emeğinizi dünyaya tanıtıyorsunuz. Her bir ürün, 
-            sizin hikayenizin bir parçası ve bu hikaye, müşterilerinizin hayatına dokunacak. Sizlerin başarısı, bizim 
-            başarımızdır ve bu yolculukta sizlere destek olmaktan gurur duyuyoruz.
-        </p>
-        <p>
-            Hep birlikte, daha güçlü ve daha başarılı bir topluluk oluşturacağız. Sizlere olan inancımız tam ve 
-            başarılarınızla gurur duyuyoruz. Yolunuz açık, başarılarınız daim olsun.
-        </p>
-        <div class="signature">
-            Saygılarımla,<br>
-            Zeynep Tekin<br>
-            CEO, El Emek
+        <h1>El Emeği, Göz Nuru: Geleceği Birlikte Üretiyoruz</h1>
+
+<p>
+Bu platform, yalnızca bir e-ticaret sitesi değil; el yapımı zanaat ürünlerini görünür kılan, üreticilerin hikâyelerini duyuran ve yerel üretimi destekleyen bir dayanışma ağıdır. Amacımız, geleneksel el sanatlarını modern teknolojiyle buluşturarak, kültürel mirasımızı dijital dünyada yaşatmak ve ülke ekonomisine katkı sunan üreticileri bir araya getirmektir.
+</p>
+
+<p>
+Seramikten ahşaba, dokumadan takıya, deriden doğal kozmetiğe kadar uzanan geniş ürün yelpazemizle, hem üreticilerin hem de tüketicilerin özgünlüğe ulaşmasını sağlıyoruz. Her ürün, kendi öyküsünü anlatır; her zanaatkâr, emeğiyle topluma katkı sunar. Biz bu emeği görünür kılmak, değerini korumak ve daha geniş kitlelere ulaştırmak için buradayız.
+</p>
+
+<p>
+Platformumuz; ürün özelleştirme, sınırlı üretim, üretici tanıtımı ve eğitim içerikleriyle yalnızca ticari değil, aynı zamanda kültürel bir keşif deneyimi sunar. El emeğine değer veren kullanıcılar için, sadece alışveriş değil; bir bağ kurma, öğrenme ve destek olma alanıdır.
+</p>
+
+<p>
+Bu yolculukta, şehirden köye, atölyeden evlere kadar her üreticinin emeğine yer var. Yeter ki inanın, üretin ve paylaşın. Biz, emeğinizi anlatmak, desteklemek ve birlikte büyümek için buradayız.
+</p>
+
+<div class="signature">
+Sevgi ve saygıyla,<br>
+Eticaret Ekibi
+</div>
+
         </div>
     </div>
     <canvas class="fireworks"></canvas>

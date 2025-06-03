@@ -280,7 +280,9 @@ try {
     <span class="num" data-value="50">00</span>
     <span style="margin-top: 40px;">+</span>
   </div>
+
   <span class="text">Girişimci</span>
+
 </div>
 <div class="container border-end border-warning col-12 col-lg-3 text-center">
   <div class="sayac d-flex" style="padding-left: 100px;">
@@ -302,6 +304,7 @@ try {
     <div class="col-12 col-md-5 text-center py-5">
       <div class="text-start" style="color:rgb(155, 10, 109) ;">El Emeği Ürünlerin Hikayesine Ortak Olun</div>
       <div class="baslik3 text-start text-black fw-bold" style="font-size: 3vw;">Yeni Ürünlerimizi Deneyin</div>
+
       <div class="text-start">Geleneksel değerlerle modern tasarım anlayışını bir araya getiren bu e-ticaret deneyimi, sadece alışveriş yapmakla kalmayıp, zanaatın ruhunu keşfetmenize olanak tanır. Keşfedin, ilham alın ve emeğe değer katın.</div>
     </div>
     <div class="col-12 col-md-7">
@@ -430,7 +433,9 @@ try {
           <img src="images/zey.jpeg" alt="Ünlü Kadın"
             style="border-radius: 50%; height: 70px; width: 70px; margin-left: 10px;">
           <div class="ms-3">
+
             <div>Zeynep Nuriye Tekin</div>
+
             <div style="color: rgb(105, 101, 101); font-weight: bold; font-size: 12px;">Eticaret Ekibi</div>
           </div>
         </div>
@@ -548,7 +553,7 @@ try {
       Yorumlar
     </div>
     <div class="baslik3" style="font-size: 50px;">
-      Girişimcilerden Gelen Yorumlar
+      Girişimcilerde Gelen Yorumlar
     </div>
   </div>
 </div>
