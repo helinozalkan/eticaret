@@ -70,20 +70,18 @@ try {
       <div class="collapse navbar-collapse mt-1 bg-custom" id="navbarSupportedContent">
         <ul class="navbar-nav  me-auto mb-2 mb-lg-0 " style="margin-left: 110px;">
           <li class="nav-item dropdown ps-3">
-            <button id="navbarDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown"
-              aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
+            <button id="navbarDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
               Ana sayfa
-            </button>
+             </button>
             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-              <a class="dropdown-item" href="#">Girişimci Sayısı</a>
-              <a class="dropdown-item" href="#">Yeni Ürünlerimiz</a>
-              <a class="dropdown-item" href="#">Eticaret Ekibi</a>
-              <a class="dropdown-item" href="#">indirim Haberleri</a>
-              <a class="dropdown-item" href="#">Popüler Ürünler</a>
-              <a class="dropdown-item" href="#">Başarılı Satıcılar</a>
-            </div>
+             <a class="dropdown-item" href="php/girisimciler.php">Girişimci Sayısı</a>
+             <a class="dropdown-item" href="#">Yeni Ürünlerimiz</a>
+             <a class="dropdown-item" href="php/eticaret-ekibi.php">Eticaret Ekibi</a>
+             <a class="dropdown-item" href="#">İndirim Haberleri</a>
+             <a class="dropdown-item" href="#">Popüler Ürünler</a>
+             <a class="dropdown-item" href="#">Başarılı Satıcılar</a>
+           </div>
           </li>
-
           
           <li class="nav-item dropdown ps-3">
             <button id="navbarDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown"
