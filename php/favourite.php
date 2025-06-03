@@ -109,7 +109,7 @@
 
         <div class="baslik fs-3">
           <a class="dropdown-item" href="../index.php">
-            ELEMEK
+            ETİCARET
           </a>
         </div>
       </a>

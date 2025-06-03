@@ -1,206 +1,279 @@
 <?php
 // product_action.php - Ürün ekleme, düzenleme ve silme işlemleri
-session_start(); // Oturumu başlat
-include('../database.php'); // Veritabanı bağlantısını dahil et (PDO bağlantısı kurduğunu varsayıyoruz)
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+include('../database.php'); // Veritabanı bağlantısı
 
-// Satıcı yetki kontrolü
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'seller') {
-    // Eğer satıcı giriş yapmamışsa veya yetkisi yoksa, giriş sayfasına yönlendir
-    header("Location: login.php?status=unauthorized");
+// Özel İstisna Sınıfı
+class ProductActionException extends Exception {}
+
+// PDO Parametre Sabitleri
+define('PARAM_USER_ID_PA', ':user_id');
+define('PARAM_PRODUCT_ID_PA', ':product_id');
+define('PARAM_SATICI_ID_PA', ':satici_id');
+define('PARAM_URUN_ADI_PA', ':urun_adi');
+define('PARAM_URUN_FIYATI_PA', ':urun_fiyati');
+define('PARAM_STOK_ADEDI_PA', ':stok_adedi');
+define('PARAM_URUN_GORSELI_PA', ':urun_gorseli');
+define('PARAM_URUN_ACIKLAMASI_PA', ':urun_aciklamasi');
+define('PARAM_AKTIFLIK_DURUMU_PA', ':aktiflik_durumu');
+
+
+// 1. Satıcı Yetki Kontrolü
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'seller') {
+    header("Location: login.php?status=unauthorized_access");
     exit();
 }
 
-$seller_user_id = $_SESSION['user_id']; // Oturumdan users.id'yi al
+$seller_user_id = $_SESSION['user_id'];
+$satici_id = null;
+$upload_dir = '../uploads/'; // Yükleme dizini (scriptin çalıştığı yere göre göreceli)
 
 // Satıcı ID'sini veritabanından al
 try {
-    $stmt_seller = $conn->prepare("SELECT Satici_ID FROM Satici WHERE User_ID = :user_id");
-    $stmt_seller->bindParam(':user_id', $seller_user_id, PDO::PARAM_INT);
+    $stmt_seller = $conn->prepare("SELECT Satici_ID FROM Satici WHERE User_ID = " . PARAM_USER_ID_PA);
+    $stmt_seller->bindParam(PARAM_USER_ID_PA, $seller_user_id, PDO::PARAM_INT);
     $stmt_seller->execute();
     $satici_data = $stmt_seller->fetch(PDO::FETCH_ASSOC);
 
     if (!$satici_data) {
-        // Satıcı kaydı bulunamazsa, hata logla ve yönlendir
-        error_log("product_action.php: Satıcı kaydı bulunamadı User_ID: " . $seller_user_id);
-        header("Location: seller_dashboard.php?status=seller_not_found");
+        error_log("product_action.php: Satıcı kaydı bulunamadı. User_ID: " . $seller_user_id);
+        // Yönlendirme için session mesajı kullanılabilir manage_product.php'de göstermek üzere
+        $_SESSION['form_error_message'] = "Satıcı profiliniz bulunamadı. Lütfen destek ile iletişime geçin.";
+        header("Location: seller_dashboard.php?status=seller_profile_not_found"); // veya manage_product.php
         exit();
     }
     $satici_id = $satici_data['Satici_ID'];
 
 } catch (PDOException $e) {
     error_log("product_action.php: Satıcı ID alınırken veritabanı hatası: " . $e->getMessage());
-    header("Location: seller_dashboard.php?status=db_error");
+    $_SESSION['form_error_message'] = "Veritabanı hatası oluştu. Lütfen daha sonra tekrar deneyin.";
+    header("Location: seller_dashboard.php?status=db_error_seller_fetch"); // veya manage_product.php
     exit();
 }
 
-// Sadece POST isteklerini işle
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // Hangi eylemin istendiğini belirle
-    // input type="submit" name="add_product" veya "delete_product" gibi
+// 2. Sadece POST isteklerini işle
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: manage_product.php?status=invalid_request_method");
+    exit();
+}
+
+// 3. CSRF Token Kontrolü (Formlarınıza CSRF token eklemelisiniz)
+// if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+//     error_log("product_action.php: CSRF token mismatch for User_ID: " . $seller_user_id);
+//     $_SESSION['form_error_message'] = "Geçersiz istek (CSRF). Lütfen formu tekrar gönderin.";
+//     header("Location: manage_product.php?status=csrf_error");
+//     exit();
+// }
+
+
+try {
     if (isset($_POST['add_product'])) {
-        // Ürün ekleme işlemi
-        $urun_adi = trim(htmlspecialchars($_POST['product_name'] ?? ''));
-        $urun_fiyati = filter_input(INPUT_POST, 'product_price', FILTER_VALIDATE_FLOAT);
-        $stok_adedi = filter_input(INPUT_POST, 'product_stock', FILTER_VALIDATE_INT);
-        $urun_aciklama = trim(htmlspecialchars($_POST['product_description'] ?? ''));
-        $aktiflik_durumu = isset($_POST['product_status']) ? 1 : 0;
+        // Ürün Ekleme İşlemi
+        $urun_adi = trim($_POST['product_name'] ?? '');
+        $urun_fiyati_str = trim($_POST['product_price'] ?? '');
+        $stok_adedi_str = trim($_POST['product_stock'] ?? '');
+        $urun_aciklama = trim($_POST['product_description'] ?? '');
+        $aktiflik_durumu = isset($_POST['product_status']) ? 1 : 0; // Checkbox işaretliyse 1, değilse 0
 
-        // Validasyonlar
-        if (empty($urun_adi) || $urun_fiyati === false || $urun_fiyati < 0 || $stok_adedi === false || $stok_adedi < 0) {
-            header("Location: manage_product.php?status=add_invalid_input");
-            exit();
+        // Detaylı Validasyonlar
+        if (empty($urun_adi) || mb_strlen($urun_adi) > 255) { // mb_strlen multibyte karakterler için
+            throw new ProductActionException("Ürün adı boş bırakılamaz ve en fazla 255 karakter olabilir.");
         }
+        if (!is_numeric($urun_fiyati_str) || (float)$urun_fiyati_str < 0 || (float)$urun_fiyati_str > 9999999.99) {
+            throw new ProductActionException("Geçerli bir ürün fiyatı girin (0 - 9999999.99 arası).");
+        }
+        $urun_fiyati = (float)$urun_fiyati_str;
 
-        $urun_gorseli = null;
-        $upload_dir = '../uploads/';
+        if (!ctype_digit($stok_adedi_str) || (int)$stok_adedi_str < 0 || (int)$stok_adedi_str > 99999) { // ctype_digit sadece rakam kontrolü
+            throw new ProductActionException("Geçerli bir stok adedi girin (0 - 99999 arası).");
+        }
+        $stok_adedi = (int)$stok_adedi_str;
 
-        // Yükleme dizininin varlığını kontrol et ve yoksa oluştur
+        if (mb_strlen($urun_aciklama) > 1000) { // Örnek bir sınır
+            throw new ProductActionException("Ürün açıklaması en fazla 1000 karakter olabilir.");
+        }
+        // htmlspecialchars ürün adı ve açıklama için veritabanına kaydetmeden hemen önce veya gösterirken yapılabilir.
+        // Güvenlik için, veritabanına ham veri kaydedip gösterirken htmlspecialchars kullanmak daha yaygındır.
+        // Şimdilik, veritabanına eklerken htmlspecialchars ile ekleyelim, gösterirken tekrar edilmemesine dikkat edin.
+        $urun_adi_safe = htmlspecialchars($urun_adi, ENT_QUOTES, 'UTF-8');
+        $urun_aciklama_safe = htmlspecialchars($urun_aciklama, ENT_QUOTES, 'UTF-8');
+
+
+        $urun_gorseli_filename = null;
+        // Yükleme dizininin varlığını kontrol et ve yoksa oluştur (Daha güvenli izinler)
         if (!is_dir($upload_dir)) {
-            if (!mkdir($upload_dir, 0777, true)) {
-                error_log("product_action.php: 'uploads' dizini oluşturulamadı.");
-                header("Location: manage_product.php?status=upload_dir_error");
-                exit();
+            if (!mkdir($upload_dir, 0755, true)) { // 0777 yerine 0755
+                error_log("product_action.php: 'uploads' dizini oluşturulamadı. Kontrol edin: " . $upload_dir);
+                throw new ProductActionException("Dosya yükleme dizini oluşturulamadı. Sistem yöneticisine başvurun.");
             }
         }
 
-        // Dosya yükleme işlemi
+        // Dosya Yükleme İşlemi
         if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
-            $file_tmp_path = $_FILES['product_image']['tmp_name'];
-            $file_name = $_FILES['product_image']['name'];
-            $file_size = $_FILES['product_image']['size'];
-            $file_type = $_FILES['product_image']['type'];
+            if (!is_uploaded_file($_FILES['product_image']['tmp_name'])) { // Ek güvenlik kontrolü
+                throw new ProductActionException("Geçersiz dosya yükleme denemesi.");
+            }
 
-            // Güvenli dosya uzantıları ve MIME tipleri kontrolü
+            $file_tmp_path = $_FILES['product_image']['tmp_name'];
+            $file_name = basename($_FILES['product_image']['name']); // basename ile path traversal saldırılarını engelle
+            $file_size = $_FILES['product_image']['size'];
+            $file_type = mime_content_type($file_tmp_path); // Daha güvenilir MIME type tespiti
+
             $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
             $allowed_mime_types = ['image/jpeg', 'image/png', 'image/gif'];
             $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
             if (!in_array($file_ext, $allowed_extensions) || !in_array($file_type, $allowed_mime_types)) {
-                header("Location: manage_product.php?status=invalid_file_type");
-                exit();
+                throw new ProductActionException("Geçersiz dosya türü. Sadece JPG, JPEG, PNG, GIF izinlidir.");
             }
 
-            // Maksimum dosya boyutu (örn: 5MB)
-            $max_file_size = 5 * 1024 * 1024;
+            $max_file_size = 5 * 1024 * 1024; // 5MB
             if ($file_size > $max_file_size) {
-                header("Location: manage_product.php?status=file_too_large");
-                exit();
+                throw new ProductActionException("Dosya boyutu çok büyük (Maksimum 5MB).");
             }
 
-            // Benzersiz dosya adı oluştur
-            $new_file_name = uniqid() . '_' . bin2hex(random_bytes(8)) . '.' . $file_ext;
-            $upload_path = $upload_dir . $new_file_name;
+            // Benzersiz ve güvenli dosya adı oluştur
+            $urun_gorseli_filename = bin2hex(random_bytes(16)) . '.' . $file_ext;
+            $upload_path = $upload_dir . $urun_gorseli_filename;
 
-            if (move_uploaded_file($file_tmp_path, $upload_path)) {
-                $urun_gorseli = $new_file_name;
-            } else {
-                error_log("product_action.php: Dosya yüklenirken hata oluştu: " . $_FILES['product_image']['error']);
-                header("Location: manage_product.php?status=upload_failed");
-                exit();
+            if (!move_uploaded_file($file_tmp_path, $upload_path)) {
+                error_log("product_action.php: Dosya yüklenirken hata. Kaynak: $file_tmp_path, Hedef: $upload_path");
+                throw new ProductActionException("Dosya yüklenirken bir hata oluştu.");
             }
         }
 
-        try {
-            $conn->beginTransaction(); // İşlemi başlat
+        $conn->beginTransaction();
+        $stmt = $conn->prepare("INSERT INTO Urun (Urun_Adi, Urun_Fiyati, Stok_Adedi, Urun_Gorseli, Urun_Aciklamasi, Aktiflik_Durumu, Satici_ID) VALUES (".PARAM_URUN_ADI_PA.", ".PARAM_URUN_FIYATI_PA.", ".PARAM_STOK_ADEDI_PA.", ".PARAM_URUN_GORSELI_PA.", ".PARAM_URUN_ACIKLAMASI_PA.", ".PARAM_AKTIFLIK_DURUMU_PA.", ".PARAM_SATICI_ID_PA.")");
+        $stmt->bindParam(PARAM_URUN_ADI_PA, $urun_adi_safe, PDO::PARAM_STR);
+        $stmt->bindParam(PARAM_URUN_FIYATI_PA, $urun_fiyati); // PDO::PARAM_STR olarak gönderilip DB'de float'a dönüşür
+        $stmt->bindParam(PARAM_STOK_ADEDI_PA, $stok_adedi, PDO::PARAM_INT);
+        $stmt->bindParam(PARAM_URUN_GORSELI_PA, $urun_gorseli_filename, PDO::PARAM_STR);
+        $stmt->bindParam(PARAM_URUN_ACIKLAMASI_PA, $urun_aciklama_safe, PDO::PARAM_STR);
+        $stmt->bindParam(PARAM_AKTIFLIK_DURUMU_PA, $aktiflik_durumu, PDO::PARAM_INT);
+        $stmt->bindParam(PARAM_SATICI_ID_PA, $satici_id, PDO::PARAM_INT);
 
-            $stmt = $conn->prepare("INSERT INTO Urun (Urun_Adi, Urun_Fiyati, Stok_Adedi, Urun_Gorseli, Urun_Aciklamasi, Aktiflik_Durumu, Satici_ID) VALUES (:urun_adi, :urun_fiyati, :stok_adedi, :urun_gorseli, :urun_aciklamasi, :aktiflik_durumu, :satici_id)");
-            $stmt->bindParam(':urun_adi', $urun_adi);
-            $stmt->bindParam(':urun_fiyati', $urun_fiyati);
-            $stmt->bindParam(':stok_adedi', $stok_adedi, PDO::PARAM_INT);
-            $stmt->bindParam(':urun_gorseli', $urun_gorseli);
-            $stmt->bindParam(':urun_aciklamasi', $urun_aciklama);
-            $stmt->bindParam(':aktiflik_durumu', $aktiflik_durumu, PDO::PARAM_INT);
-            $stmt->bindParam(':satici_id', $satici_id, PDO::PARAM_INT);
-
-            if ($stmt->execute()) {
-                $conn->commit(); // İşlemi onayla
-                header("Location: manage_product.php?status=product_added");
-                exit();
-            } else {
-                $conn->rollBack(); // Hata oluşursa geri al
-                error_log("product_action.php: Ürün eklenirken veritabanı hatası: " . implode(" ", $stmt->errorInfo()));
-                header("Location: manage_product.php?status=add_db_error");
-                exit();
-            }
-        } catch (PDOException $e) {
-            $conn->rollBack(); // PDO hatası durumunda geri al
-            error_log("product_action.php: Ürün ekleme sırasında PDO hatası: " . $e->getMessage());
-            header("Location: manage_product.php?status=db_error");
+        if ($stmt->execute()) {
+            $conn->commit();
+            $_SESSION['form_success_message'] = "Ürün başarıyla eklendi.";
+            header("Location: manage_product.php?status=product_added_successfully");
             exit();
+        } else {
+            $conn->rollBack();
+            error_log("product_action.php: Ürün eklenirken veritabanı hatası: " . implode(" ", $stmt->errorInfo()));
+            throw new ProductActionException("Ürün eklenirken veritabanında bir sorun oluştu.");
         }
 
-    } elseif (isset($_POST['edit_product'])) {
-        // Ürün düzenleme sayfasına yönlendirme
-        $product_id = filter_input(INPUT_POST, 'product_id', FILTER_VALIDATE_INT);
-
-        if ($product_id === false || $product_id <= 0) {
-            header("Location: manage_product.php?status=edit_invalid_id");
-            exit();
-        }
-        header("Location: edit_product.php?id=" . $product_id); // 'product_id' yerine 'id' kullanıyoruz
+    } elseif (isset($_POST['edit_product_action'])) { // edit_product.php'den gelen güncelleme isteği
+        // Bu kısım edit_product.php içinde olmalı.
+        // product_action.php genellikle sadece add/delete/status change gibi doğrudan aksiyonları yönetir.
+        // Eğer edit_product.php formunu buraya POST ediyorsanız, mantık buraya eklenebilir.
+        // Şimdilik, edit_product.php'ye yönlendirme bloğu (aşağıdaki) daha mantıklı.
+        // Eğer tüm update logic'i burada olacaksa, product_id, urun_adi vb. tüm alanlar alınmalı,
+        // validasyon yapılmalı ve UPDATE sorgusu çalıştırılmalı.
+        // Örnek:
+        // $product_id_edit = filter_input(INPUT_POST, 'product_id', FILTER_VALIDATE_INT);
+        // ... diğer alanlar ...
+        // ... validasyonlar ...
+        // ... $stmt = $conn->prepare("UPDATE Urun SET Urun_Adi = ..., WHERE Urun_ID = ... AND Satici_ID = ...");
+        // ... execute, commit/rollback ...
+        // header("Location: manage_product.php?status=product_updated");
+        // exit();
+        $_SESSION['form_info_message'] = "Ürün düzenleme işlemi için lütfen ilgili ürünü düzenle sayfasını kullanın.";
+        header("Location: manage_product.php?status=edit_via_form_only");
         exit();
+
 
     } elseif (isset($_POST['delete_product'])) {
-        // Ürün silme işlemi
-        $product_id = filter_input(INPUT_POST, 'product_id', FILTER_VALIDATE_INT);
+        $product_id_delete = filter_input(INPUT_POST, 'product_id', FILTER_VALIDATE_INT);
 
-        if ($product_id === false || $product_id <= 0) {
-            header("Location: manage_product.php?status=delete_invalid_id");
-            exit();
+        if ($product_id_delete === false || $product_id_delete <= 0) {
+            throw new ProductActionException("Silinecek ürün için geçersiz ID.");
         }
 
-        try {
-            $conn->beginTransaction(); // İşlemi başlat
+        $conn->beginTransaction();
+        $stmt_get_image = $conn->prepare("SELECT Urun_Gorseli FROM Urun WHERE Urun_ID = ".PARAM_PRODUCT_ID_PA." AND Satici_ID = ".PARAM_SATICI_ID_PA);
+        $stmt_get_image->bindParam(PARAM_PRODUCT_ID_PA, $product_id_delete, PDO::PARAM_INT);
+        $stmt_get_image->bindParam(PARAM_SATICI_ID_PA, $satici_id, PDO::PARAM_INT);
+        $stmt_get_image->execute();
+        $product_image_data = $stmt_get_image->fetch(PDO::FETCH_ASSOC);
 
-            // Ürün bilgilerini çek (görseli silmek için)
-            $stmt_get_image = $conn->prepare("SELECT Urun_Gorseli FROM Urun WHERE Urun_ID = :product_id AND Satici_ID = :satici_id");
-            $stmt_get_image->bindParam(':product_id', $product_id, PDO::PARAM_INT);
-            $stmt_get_image->bindParam(':satici_id', $satici_id, PDO::PARAM_INT);
-            $stmt_get_image->execute();
-            $product_data = $stmt_get_image->fetch(PDO::FETCH_ASSOC);
+        if (!$product_image_data) {
+            $conn->rollBack();
+            throw new ProductActionException("Silinecek ürün bulunamadı veya bu ürünü silme yetkiniz yok.");
+        }
+        $product_image_to_delete = $product_image_data['Urun_Gorseli'];
 
-            if (!$product_data) {
-                $conn->rollBack(); // Ürün bulunamazsa geri al
-                header("Location: manage_product.php?status=product_not_found_or_unauthorized");
-                exit();
-            }
+        $stmt_delete = $conn->prepare("DELETE FROM Urun WHERE Urun_ID = ".PARAM_PRODUCT_ID_PA." AND Satici_ID = ".PARAM_SATICI_ID_PA);
+        $stmt_delete->bindParam(PARAM_PRODUCT_ID_PA, $product_id_delete, PDO::PARAM_INT);
+        $stmt_delete->bindParam(PARAM_SATICI_ID_PA, $satici_id, PDO::PARAM_INT);
 
-            $product_image = $product_data['Urun_Gorseli'];
-
-            // Ürün silme sorgusu
-            $stmt_delete = $conn->prepare("DELETE FROM Urun WHERE Urun_ID = :product_id AND Satici_ID = :satici_id");
-            $stmt_delete->bindParam(':product_id', $product_id, PDO::PARAM_INT);
-            $stmt_delete->bindParam(':satici_id', $satici_id, PDO::PARAM_INT);
-
-            if ($stmt_delete->execute()) {
-                // Görseli sil
-                if ($product_image && file_exists($upload_dir . $product_image)) {
-                    unlink($upload_dir . $product_image);
+        if ($stmt_delete->execute() && $stmt_delete->rowCount() > 0) {
+            if ($product_image_to_delete && file_exists($upload_dir . $product_image_to_delete)) {
+                if (!unlink($upload_dir . $product_image_to_delete)) {
+                    error_log("product_action.php: Ürün görseli silinemedi: " . $upload_dir . $product_image_to_delete);
+                     // Bu kritik bir hata değil, ürün silindi ama görseli kaldı. Loglamak yeterli olabilir.
                 }
-                $conn->commit(); // İşlemi onayla
-                header("Location: manage_product.php?status=product_deleted");
-                exit();
-            } else {
-                $conn->rollBack(); // Hata oluşursa geri al
-                error_log("product_action.php: Ürün silinirken hiçbir satır etkilenmedi. Product ID: " . $product_id);
-                header("Location: manage_product.php?status=delete_failed");
-                exit();
             }
-        } catch (PDOException $e) {
-            $conn->rollBack(); // PDO hatası durumunda geri al
-            error_log("product_action.php: Ürün silme sırasında PDO hatası: " . $e->getMessage());
-            header("Location: manage_product.php?status=db_error");
+            $conn->commit();
+            $_SESSION['form_success_message'] = "Ürün başarıyla silindi.";
+            header("Location: manage_product.php?status=product_deleted_successfully");
             exit();
+        } else {
+            $conn->rollBack();
+            error_log("product_action.php: Ürün silinirken hiçbir satır etkilenmedi veya hata. Product ID: " . $product_id_delete);
+            throw new ProductActionException("Ürün silinirken bir sorun oluştu veya ürün bulunamadı.");
         }
-    } else {
-        // Bilinmeyen POST eylemi
-        header("Location: manage_product.php?status=unknown_action");
+    } elseif (isset($_POST['edit_product_redirect'])) { // Bu, manage_product.php'deki "Düzenle" butonu için olabilir
+        // Bu kısım sizin mevcut `edit_product` bloğunuzla aynı işlevi görüyor, sadece POST name farklı.
+        // Genellikle "Düzenle" butonu GET ile ID gönderir veya form içinde POST ile ID ve bir action gönderir.
+        // Sizin kodunuzda manage_product.php'den gelen POST['edit_product'] vardı, bu GET olmalı.
+        // Eğer manage_product.php'deki düzenle butonu bir form içindeyse ve POST ile 'edit_product_redirect' gönderiyorsa bu blok çalışır.
+        $product_id_redirect = filter_input(INPUT_POST, 'product_id', FILTER_VALIDATE_INT);
+        if ($product_id_redirect === false || $product_id_redirect <= 0) {
+            throw new ProductActionException("Düzenlenecek ürün için geçersiz ID.");
+        }
+        header("Location: edit_product.php?id=" . $product_id_redirect);
         exit();
     }
-} else {
-    // POST dışı istekler için yönlendirme
-    header("Location: manage_product.php?status=invalid_request");
+    else {
+        throw new ProductActionException("Bilinmeyen bir ürün işlemi talep edildi.");
+    }
+
+} catch (PDOException $e) {
+    if (isset($conn) && $conn->inTransaction()) {
+        $conn->rollBack();
+    }
+    error_log("product_action.php PDOException: " . $e->getMessage());
+    $_SESSION['form_error_message'] = "Veritabanı işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.";
+    header("Location: manage_product.php?status=db_processing_error");
+    exit();
+} catch (ProductActionException $e) {
+    if (isset($conn) && $conn->inTransaction()) {
+        $conn->rollBack();
+    }
+    error_log("product_action.php ProductActionException: " . $e->getMessage());
+    $_SESSION['form_error_message'] = $e->getMessage(); // Özel hata mesajını session'a ata
+    header("Location: manage_product.php?status=product_action_failed");
+    exit();
+} catch (Exception $e) { // Diğer tüm genel istisnalar
+    if (isset($conn) && $conn->inTransaction()) {
+        $conn->rollBack();
+    }
+    error_log("product_action.php Generic Exception: " . $e->getMessage());
+    $_SESSION['form_error_message'] = "Beklenmedik bir sistem hatası oluştu.";
+    header("Location: manage_product.php?status=unexpected_system_error_product_action");
     exit();
 }
-?>
+
+// Herhangi bir POST işlemi tanımlanamadıysa veya bir hata oluştuysa (catch bloklarından çıkılırsa)
+// Bu noktaya normalde gelinmemeli, tüm yollar exit() ile bitiyor.
+// Ama bir fallback olarak.
+if (!headers_sent()) { // Henüz header gönderilmediyse
+    $_SESSION['form_error_message'] = $_SESSION['form_error_message'] ?? "Tanımsız bir işlem durumu oluştu.";
+    header("Location: manage_product.php?status=unknown_product_action_state");
+    exit();
+}
+
