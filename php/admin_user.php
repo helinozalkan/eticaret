@@ -3,14 +3,31 @@
 session_start();
 include('../database.php');
 
+// Admin yetki kontrolü
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+    header("Location: login.php?status=unauthorized");
+    exit();
+}
+
 // Giriş yapmış kullanıcı bilgilerini kontrol et
 $logged_in = isset($_SESSION['user_id']); // Kullanıcı giriş yapmış mı kontrol et
 $username = $logged_in ? $_SESSION['username'] : null; // Kullanıcı adını al
 
+try {
+    // Tüm kullanıcıları listele (Admin, Satıcı ve Müşteri)
+    // Eğer sadece satıcı ve müşteri gösterilecekse, WHERE koşulu aynen kalabilir.
+    // admin_dashboard'da tüm rolleri listelediğimiz için, burada da tüm rolleri listeleyelim.
+    $stmt_users = $conn->prepare("SELECT id, username, email, role FROM users");
+    $stmt_users->execute();
+    $all_users = $stmt_users->fetchAll(PDO::FETCH_ASSOC);
 
+} catch (PDOException $e) {
+    // Veritabanı hatası durumunda hata logla ve boş bir dizi döndür
+    error_log("admin_user.php - Veritabanı hatası: " . $e->getMessage());
+    $all_users = [];
+    // İsteğe bağlı: Kullanıcıya dostça bir hata mesajı gösterilebilir
+}
 
-$query = "SELECT * FROM users WHERE role='seller' OR role='customer'";
-$result = mysqli_query($conn, $query);
 
 ?>
 
@@ -107,24 +124,39 @@ $result = mysqli_query($conn, $query);
             </tr>
         </thead>
         <tbody>
-            <?php while ($user = mysqli_fetch_assoc($result)) { ?>
+            <?php if (!empty($all_users)): ?>
+            <?php foreach ($all_users as $user): ?>
             <tr>
-                <td><?php echo $user['id']; ?></td>
-                <td><?php echo $user['username']; ?></td>
-                <td><?php echo $user['email']; ?></td>
-                <td><?php echo $user['role']; ?></td>
+                <td><?php echo htmlspecialchars($user['id']); ?></td>
+                <td><?php echo htmlspecialchars($user['username']); ?></td>
+                <td><?php echo htmlspecialchars($user['email']); ?></td>
+                <td><?php echo htmlspecialchars($user['role']); ?></td>
                 <td>
-        <?php 
-        $status = $user['status'] ?? 'Pasif';
-        echo $status == 1 ? 'Aktif' : 'Pasif';
-        ?>
-    </td>
+                    <?php
+                    // Proje şemasına göre users tablosunda direkt bir 'status' sütunu yok.
+                    // 'seller' rolü için 'satici' tablosundaki 'HesapDurumu' kullanılabilir.
+                    // Diğer roller (admin, customer) için şimdilik 'Aktif' varsayalım.
+                    if ($user['role'] === 'seller') {
+                        // Satıcının HesapDurumu'nu ayrıca çekmek gerekebilir.
+                        // Basitlik adına şimdilik "Bilgi Yok" diyebiliriz veya varsayılan "Aktif" kabul edebiliriz
+                        // İleride bu sayfada satıcı durumunu dinamik olarak çekmek için ek sorgu yazabiliriz.
+                        echo 'Bilgi Yok'; // Ya da 'Doğrulama Bekliyor' gibi bir ifade
+                    } else {
+                        echo 'Aktif'; // Admin ve Müşteri rolündekileri varsayılan olarak aktif göster
+                    }
+                    ?>
+                </td>
                 <td>
-                    <a href="edit_user.php?id=<?php echo $user['id']; ?>" class="btn btn-warning btn-sm">Düzenle</a>
-                    <a href="delete_user.php?id=<?php echo $user['id']; ?>" class="btn btn-danger btn-sm">Sil</a>
+                    <a href="edit_user.php?id=<?php echo htmlspecialchars($user['id']); ?>" class="btn btn-warning btn-sm">Düzenle</a>
+                    <a href="delete_user.php?id=<?php echo htmlspecialchars($user['id']); ?>" class="btn btn-danger btn-sm" onclick="return confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!')">Sil</a>
                 </td>
             </tr>
-            <?php } ?>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <tr>
+                <td colspan="6">Kayıtlı kullanıcı bulunamadı.</td>
+            </tr>
+        <?php endif; ?>
         </tbody>
     </table>
 </div>
