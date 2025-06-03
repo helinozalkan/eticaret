@@ -177,7 +177,7 @@ try {
     if (isset($conn) && $conn->inTransaction()) {
         $conn->rollBack();
     }
-    error_log("add_to_cart.php PDOException: " . $e->getMessage() . "(Urun_ID: " . ($urun_id_posted ?? 'N/A') . ", Miktar: " . ($miktar_posted ?? 'N/A') . ")");
+    error_log("add_to_cart.php PDOException: " . $e->getMessage() . "(Urun_ID: " . ($urun_id_posted ?? 'N/A') . ",Miktar: " . ($miktar_posted ?? 'N/A') . ")");
     $redirect_status = 'db_error_on_add_to_cart';
 } catch (AddToCartException $e) { // Kendi özel istisnamız
     if (isset($conn) && $conn->inTransaction()) {
