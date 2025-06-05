@@ -46,6 +46,10 @@
 <div class="container py-5">
   <h2 class="text-center text-primary mb-5">GİRİŞİMCİLERİMİZ: YÜZLERCE EMEKÇİ ETİCARET'TE!</h2>
 
+  <div class="back-button">
+        <a class="btn btn-secondary" href="../index.php">←</a>
+    </div>
+
   <div class="row row-cols-1 row-cols-md-4 g-4">
     <!-- Girişimci kartları buraya aynı şekilde -->
     <div class="col">
@@ -135,6 +139,22 @@
 </div>
 
 </div>
+
+
+<style>
+.back-button {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+}
+
+.back-button a {
+    font-size: 16px;
+    padding: 8px 14px;
+    text-decoration: none;
+    display: inline-block;
+}
+</style>
 
 <canvas class="fireworks"></canvas>
 

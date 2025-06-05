@@ -395,36 +395,57 @@ try {
       Girişimcilerden %50'den Fazla İndirim
       <div>
         <button type="button" class="btn ms-2 text-white"
-          style="background-color:rgb(91, 140, 213) ;border-radius: 20; height: 40px; width: 120px;margin-top: 0px;">Hemen Al</button>
+          style="background-color:rgb(91, 140, 213); border-radius: 20px; height: 40px; width: 120px; margin-top: 0px;">Hemen Al</button>
       </div>
     </div>
     <div class="col-6 text-white p-5">
-      <div class="countdown">
-        <div>
-          <div id="day" style="display: none;">00</div>
+      <div class="countdown d-flex justify-content-around">
+        <div class="text-center">
+          <div class="border fixed-size" style="border-radius: 50%; padding: 20px;" id="hour">00</div>
+          <div class="baslik3 fs-3 mt-3">Saat</div>
         </div>
-        <div class="border-danger p-5">
-          <div class="border fixed-size" style="border-radius: 50%;padding: 20px;" id="hour">00</div>
-          <div class="baslik3 fs-3 mt-3 ms-1">
-            Saat
-          </div>
+        <div class="text-center">
+          <div class="border fixed-size" style="border-radius: 50%; padding: 20px;" id="minute">00</div>
+          <div class="baslik3 fs-3 mt-3">Dakika</div>
         </div>
-        <div class="border-danger p-5">
-          <div class="border fixed-size" style="border-radius: 50%;padding: 20px;" id="minute">00</div>
-          <div class="baslik3 fs-3 mt-3">
-            Dakika
-          </div>
-        </div>
-        <div class="p-5">
-          <div class="border fixed-size" style="border-radius: 50%;padding: 20px;" id="second">00</div>
-          <div class="baslik3 fs-3 mt-3">
-            Saniye
-          </div>
+        <div class="text-center">
+          <div class="border fixed-size" style="border-radius: 50%; padding: 20px;" id="second">00</div>
+          <div class="baslik3 fs-3 mt-3">Saniye</div>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+  // Şu andan itibaren 5 saat sonrası
+  const countdownDate = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
+
+  const updateCountdown = () => {
+    const now = new Date().getTime();
+    const distance = countdownDate - now;
+
+    if (distance <= 0) {
+      document.getElementById("hour").innerText = "00";
+      document.getElementById("minute").innerText = "00";
+      document.getElementById("second").innerText = "00";
+      clearInterval(interval);
+      return;
+    }
+
+    const hours = Math.floor((distance / (1000 * 60 * 60)));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    document.getElementById("hour").innerText = String(hours).padStart(2, "0");
+    document.getElementById("minute").innerText = String(minutes).padStart(2, "0");
+    document.getElementById("second").innerText = String(seconds).padStart(2, "0");
+  };
+
+  const interval = setInterval(updateCountdown, 1000);
+  updateCountdown();
+</script>
+
 <div class="container-fluid  mt-5">
     <div class="text-center">
       <div style="color:rgb(91, 140, 213) ;">
@@ -788,3 +809,5 @@ try {
 </body>
 
 </html>
+
+

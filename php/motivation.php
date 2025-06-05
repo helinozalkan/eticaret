@@ -54,33 +54,56 @@
     </style>
 </head>
 <body>
+    <!-- Geri Dön Butonu -->
+    <div class="back-button">
+        <a class="btn btn-secondary" href="../index.php">←</a>
+    </div>
+
     <div class="container">
-        <h1>El Emeği, Göz Nuru: Geleceği Birlikte Üretiyoruz</h1>
+        <h1 class="text-center mt-4">El Emeği, Göz Nuru: Geleceği Birlikte Üretiyoruz</h1>
 
-<p>
-Bu platform, yalnızca bir e-ticaret sitesi değil; el yapımı zanaat ürünlerini görünür kılan, üreticilerin hikâyelerini duyuran ve yerel üretimi destekleyen bir dayanışma ağıdır. Amacımız, geleneksel el sanatlarını modern teknolojiyle buluşturarak, kültürel mirasımızı dijital dünyada yaşatmak ve ülke ekonomisine katkı sunan üreticileri bir araya getirmektir.
-</p>
+        <p>
+        Bu platform, yalnızca bir e-ticaret sitesi değil; el yapımı zanaat ürünlerini görünür kılan, üreticilerin hikâyelerini duyuran ve yerel üretimi destekleyen bir dayanışma ağıdır. Amacımız, geleneksel el sanatlarını modern teknolojiyle buluşturarak, kültürel mirasımızı dijital dünyada yaşatmak ve ülke ekonomisine katkı sunan üreticileri bir araya getirmektir.
+        </p>
 
-<p>
-Seramikten ahşaba, dokumadan takıya, deriden doğal kozmetiğe kadar uzanan geniş ürün yelpazemizle, hem üreticilerin hem de tüketicilerin özgünlüğe ulaşmasını sağlıyoruz. Her ürün, kendi öyküsünü anlatır; her zanaatkâr, emeğiyle topluma katkı sunar. Biz bu emeği görünür kılmak, değerini korumak ve daha geniş kitlelere ulaştırmak için buradayız.
-</p>
+        <p>
+        Seramikten ahşaba, dokumadan takıya, deriden doğal kozmetiğe kadar uzanan geniş ürün yelpazemizle, hem üreticilerin hem de tüketicilerin özgünlüğe ulaşmasını sağlıyoruz. Her ürün, kendi öyküsünü anlatır; her zanaatkâr, emeğiyle topluma katkı sunar. Biz bu emeği görünür kılmak, değerini korumak ve daha geniş kitlelere ulaştırmak için buradayız.
+        </p>
 
-<p>
-Platformumuz; ürün özelleştirme, sınırlı üretim, üretici tanıtımı ve eğitim içerikleriyle yalnızca ticari değil, aynı zamanda kültürel bir keşif deneyimi sunar. El emeğine değer veren kullanıcılar için, sadece alışveriş değil; bir bağ kurma, öğrenme ve destek olma alanıdır.
-</p>
+        <p>
+        Platformumuz; ürün özelleştirme, sınırlı üretim, üretici tanıtımı ve eğitim içerikleriyle yalnızca ticari değil, aynı zamanda kültürel bir keşif deneyimi sunar. El emeğine değer veren kullanıcılar için, sadece alışveriş değil; bir bağ kurma, öğrenme ve destek olma alanıdır.
+        </p>
 
-<p>
-Bu yolculukta, şehirden köye, atölyeden evlere kadar her üreticinin emeğine yer var. Yeter ki inanın, üretin ve paylaşın. Biz, emeğinizi anlatmak, desteklemek ve birlikte büyümek için buradayız.
-</p>
+        <p>
+        Bu yolculukta, şehirden köye, atölyeden evlere kadar her üreticinin emeğine yer var. Yeter ki inanın, üretin ve paylaşın. Biz, emeğinizi anlatmak, desteklemek ve birlikte büyümek için buradayız.
+        </p>
 
-<div class="signature">
-Sevgi ve saygıyla,<br>
-Eticaret Ekibi
+        <div class="signature">
+            Sevgi ve saygıyla,<br>
+            Eticaret Ekibi
+        </div>
+    </div>
+</body>
 
-</div>
 
         </div>
     </div>
+
+    <style>
+.back-button {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+}
+
+.back-button a {
+    font-size: 16px;
+    padding: 8px 14px;
+    text-decoration: none;
+    display: inline-block;
+}
+</style>
+
     <canvas class="fireworks"></canvas>
     <script>
         // Fireworks effect
