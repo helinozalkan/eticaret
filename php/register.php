@@ -231,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             padding-right: 30px;
         }
         button[type="submit"] {
-            background-color: rgb(155, 10, 109);
+            background-color: rgb(91, 140, 213);
             color: white;
             padding: 12px 20px;
             border: none;
@@ -243,12 +243,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             transition: background-color 0.3s ease;
         }
         button[type="submit"]:hover {
-            background-color: rgb(125, 8, 89);
+            background-color: rgb(91, 140, 213);
         }
         .form-link {
             display: block;
             margin-top: 20px;
-            color: rgb(155, 10, 109);
+            color: rgb(91, 140, 213);
             text-decoration: none;
             font-size: 0.9em;
         }

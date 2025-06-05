@@ -221,5 +221,10 @@
 
 
 
+
+    <div class="text-center mt-4">
+    <a class="btn btn-secondary" href="../index.php">Ana Sayfaya Dön</a>
+
+  </div>
 </body>
 </html>
