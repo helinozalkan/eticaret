@@ -102,21 +102,18 @@ try {
         $conn->rollBack();
     }
     error_log("manage_product.php: ProductManageException: " . $e->getMessage());
-    $_SESSION['form_error_message'] = htmlspecialchars($e->getMessage());
-    if (!headers_sent()) {
-        header("Location: manage_product.php");
-        exit();
-    }
+    $message = htmlspecialchars($e->getMessage()); // Mesajı session yerine doğrudan değişkene ata
+    $message_type = "error";
+    // Yönlendirme satırları kaldırıldı.
 } catch (PDOException $e) {
     if (isset($conn) && $conn->inTransaction()) {
         $conn->rollBack();
     }
     error_log("manage_product.php: PDOException: " . $e->getMessage());
-    $_SESSION['form_error_message'] = "Veritabanı işlemi sırasında bir sorun oluştu.";
-    if (!headers_sent()) {
-        header("Location: manage_product.php");
-        exit();
-    }
+    $message = "Veritabanı işlemi sırasında bir sorun oluştu."; // Mesajı session yerine doğrudan değişkene ata
+    $message_type = "error";
+    // Yönlendirme satırları kaldırıldı.
+
 }
 
 // Ürünleri listele
@@ -132,13 +129,11 @@ if ($satici_id !== null) {
 
     } catch (PDOException $e) {
         error_log("manage_product.php: Ürün listesi çekilirken veritabanı hatası: " . $e->getMessage());
-        $_SESSION['form_error_message'] = "Ürünler listelenirken bir sorun oluştu.";
+        $message = "Ürünler listelenirken bir sorun oluştu."; // Mesajı session yerine doğrudan değişkene ata
+        $message_type = "error";
         $products = [];
-         if (!headers_sent()) {
-            header("Location: manage_product.php");
-            exit();
-         }
-    }
+        // Yönlendirme satırları kaldırıldı.
+}
 }
 ?>
 

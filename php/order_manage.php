@@ -272,7 +272,7 @@ try {
                             <td>#<?= htmlspecialchars($order['Siparis_ID']) ?></td>
                             <td><?= htmlspecialchars($order['Musteri_Adi']) ?></td>
                             <td><?= htmlspecialchars($order['Urun_Adlari']) ?> (x<?= htmlspecialchars($order['Toplam_Urun_Miktari']) ?>)</td>
-                            <td><?= htmlspecialchars(date("d.m.Y", strtotime($order['Siparis_Tarihi']))) ?></td> {/* Saat bilgisi kaldırıldı (DATE tipi için) */}
+                            <td><?= htmlspecialchars(date("d.m.Y", strtotime($order['Siparis_Tarihi']))) ?></td>
                             <td><?= number_format(htmlspecialchars($order['Siparis_Tutari']), 2, ',', '.') ?> TL</td>
                             <td>
                                 <?php
