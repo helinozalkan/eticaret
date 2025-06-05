@@ -20,7 +20,6 @@ try {
     $total_users = $stmt_total_users->fetch(PDO::FETCH_ASSOC)['total_users'];
 
     // Aktif Satıcı Sayısı
-    // Proje dokümanına göre satıcıların HesapDurumu '1' (aktif) olduğunda aktif sayılır.
     $query_active_sellers = "SELECT COUNT(s.Satici_ID) AS active_sellers
                              FROM satici s
                              JOIN users u ON s.User_ID = u.id
@@ -29,7 +28,7 @@ try {
     $stmt_active_sellers->execute();
     $active_sellers = $stmt_active_sellers->fetch(PDO::FETCH_ASSOC)['active_sellers'];
 
-    // Pasif Satıcı Sayısı (Proje dokümanında 'Pasif Kullanıcılar' denmiş, satıcılar için HesapDurumu 0 olanları alalım)
+    // Pasif Satıcı Sayısı
     $query_inactive_sellers = "SELECT COUNT(s.Satici_ID) AS inactive_sellers
                                FROM satici s
                                JOIN users u ON s.User_ID = u.id
@@ -38,19 +37,17 @@ try {
     $stmt_inactive_sellers->execute();
     $inactive_sellers = $stmt_inactive_sellers->fetch(PDO::FETCH_ASSOC)['inactive_sellers'];
 
-    // Tüm Kullanıcıları Listele (müşteri, satıcı ve admin rolleri için)
+    // Tüm Kullanıcıları Listele
     $stmt_all_users = $conn->prepare("SELECT id, username, email, role FROM users");
     $stmt_all_users->execute();
     $all_users = $stmt_all_users->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (PDOException $e) {
-    // Veritabanı hatası durumunda hata logla ve kullanıcıya bilgi ver
     error_log("admin_dashboard.php - Veritabanı hatası: " . $e->getMessage());
     $total_users = 0;
     $active_sellers = 0;
     $inactive_sellers = 0;
     $all_users = [];
-    // İsteğe bağlı: Kullanıcıya dostça bir hata mesajı gösterilebilir veya boş değerler atanabilir.
 }
 ?>
 
@@ -60,176 +57,263 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Paneli</title>
-     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-     <link href="https://fonts.googleapis.com/css2?family=Edu+AU+VIC+WA+NT+Hand:wght@400..700&family=Montserrat:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Slab:wght@100..900&display=swap" rel="stylesheet">
+     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-     <link rel="preconnect" href="https://fonts.googleapis.com">
-     <link rel="stylesheet" href="css/css.css">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Courgette&family=Edu+AU+VIC+WA+NT+Hand:wght@400..700&family=Montserrat:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Slab:wght@100..900&display=swap" rel="stylesheet">
-    <link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"
-/>
- <script src="https://code.jquery.com/jquery-1.8.2.min.js" integrity="sha256-9VTS8JJyxvcUR+v+RTLTsd0ZWbzmafmlzMmeZO9RFyk=" crossorigin="anonymous">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    
+     <link rel="stylesheet" href="../css/css.css"> <!-- ../css/css.css olarak düzeltildi -->
+     <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .navbar-admin { /* Admin paneli için özel navbar sınıfı */
+            background-color: rgb(34, 132, 17); /* Yeşil renk */
+        }
+        .main-container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        .stat-card {
+            border: none;
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.07);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+            color: white; /* Yazı rengi beyaz yapıldı */
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .stat-card .card-header {
+            background-color: transparent;
+            border-bottom: 1px solid rgba(255,255,255,0.3); /* Beyaz ve yarı saydam border */
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            color: white; /* Başlık rengi beyaz */
+        }
+        .stat-card .card-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: white; /* Sayı rengi beyaz */
+        }
+        .stat-card .card-text {
+            font-size: 0.95rem;
+             color: rgba(255,255,255,0.85); /* Açıklama rengi daha açık beyaz */
+        }
+        .stat-card.bg-primary { background-color: #0d6efd !important; } /* Bootstrap primary */
+        .stat-card.bg-success { background-color: #198754 !important; } /* Bootstrap success */
+        .stat-card.bg-danger { background-color: #dc3545 !important; }  /* Bootstrap danger */
+
+        .table-section-title {
+            font-family: 'Playfair Display', serif;
+            color: #34495e;
+            margin-top: 50px;
+            margin-bottom: 20px;
+            font-size: 2rem;
+            font-weight: 600;
+            text-align:center;
+        }
+        .table th {
+            font-weight: 600;
+            color: #495057;
+            background-color: #e9ecef;
+        }
+        .table td {
+            vertical-align: middle;
+        }
+        .status-badge {
+            padding: 0.3em 0.6em;
+            font-size: 0.85em;
+            font-weight: 600;
+            border-radius: 0.25rem;
+            display: inline-block;
+            min-width: 80px;
+            text-align: center;
+        }
+        .status-aktif { background-color: #d1e7dd; color: #0f5132; }
+        .status-pasif { background-color: #f8d7da; color: #842029; }
+        .status-bilgi-yok { background-color: #e2e3e5; color: #495057; }
+        .status-satici-bilgisi-eksik { background-color: #fff3cd; color: #664d03;}
+     </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: rgb(34, 132, 17);">
+<nav class="navbar navbar-expand-lg navbar-dark navbar-admin">
     <div class="container-fluid">
-        
-    <a class="navbar-brand d-flex ms-4" href="../index.php" style="margin-left: 5px;">
-         
-            <div class="baslik fs-3"> E-Ticaret</div>
-
+        <a class="navbar-brand d-flex ms-4" href="../index.php">
+            <div class="baslik fs-3"> Admin Paneli</div>
         </a>
-
-                
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse mt-1 bg-custom" id="navbarSupportedContent">
+        <div class="collapse navbar-collapse mt-1" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0" style="margin-left: 110px;">
                 <li class="nav-item ps-3">
-                    <a id="navbarDropdown" class="nav-link" href="admin_dashboard.php">
-                        Admin Paneli
+                    <a class="nav-link active" href="admin_dashboard.php">
+                        <i class="bi bi-speedometer2 me-1"></i>Kontrol Paneli
                     </a>
                 </li>
                 <li class="nav-item ps-3">
-                    <a id="navbarDropdown" class="nav-link" href="admin_user.php">
-                        Kullanıcı Yönetimi
+                    <a class="nav-link" href="admin_user.php">
+                        <i class="bi bi-people-fill me-1"></i>Kullanıcı Yönetimi
                     </a>
                 </li>
                 <li class="nav-item ps-3">
-                    <a id="navbarDropdown" class="nav-link" href="seller_verification.php">
-                        Satıcı Doğrulama
+                    <a class="nav-link" href="seller_verification.php">
+                        <i class="bi bi-patch-check-fill me-1"></i>Satıcı Doğrulama
                     </a>
                 </li>
-                <li class="nav-item ps-3">
-                    <a id="navbarDropdown" class="nav-link" href="product_verification.php">
-                        Ürün Doğrulama
-                    </a>
-                </li>
+                <!-- Ürün Doğrulama linki kaldırıldı -->
             </ul>
-
-            <div class="d-flex me-3" style="margin-left: 145px;">
-    <i class="bi bi-person-circle text-white fs-4"></i>
-    <?php if (isset($_SESSION['username'])): ?>
-        <a href="logout.php" class="text-white mt-2 ms-2" style="font-size: 15px; text-decoration: none;">
-            <?php echo htmlspecialchars($_SESSION['username']); ?> </a>
-    <?php else: ?>
-        <a href="login.php" class="text-white mt-2 ms-2" style="font-size: 15px; text-decoration: none;">
-            Giriş Yap
-        </a>
-    <?php endif; ?>
-</div>
+            <div class="d-flex me-3 align-items-center">
+                <i class="bi bi-person-circle text-white fs-4 me-2"></i>
+                <?php if ($logged_in): ?>
+                    <a href="logout.php" class="text-white" style="font-size: 15px; text-decoration: none;"><?php echo $username; ?> (Çıkış Yap)</a>
+                <?php else: ?>
+                    <a href="login.php" class="text-white" style="font-size: 15px; text-decoration: none;">Giriş Yap</a>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </nav>
 
-<div class="container mt-5">
-    <h1>Admin Paneli</h1>
-    <div class="row">
+<div class="container main-container">
+    <h1 class="page-title"><i class="bi bi-shield-lock-fill me-2"></i>Admin Kontrol Paneli</h1>
+    <div class="row g-4">
         <div class="col-md-4">
-            <div class="card text-white bg-primary mb-3">
-                <div class="card-header">Toplam Kullanıcı</div>
+            <div class="stat-card bg-primary">
+                <div class="card-header"><i class="bi bi-people-fill me-2"></i>Toplam Kullanıcı</div>
                 <div class="card-body">
                     <h5 class="card-title"><?= $total_users ?></h5>
-                    <p class="card-text">Sistemde kayıtlı toplam kullanıcı sayısı.</p>
+                    <p class="card-text">Sistemde kayıtlı tüm kullanıcıların sayısı.</p>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-white bg-success mb-3">
-                <div class="card-header">Aktif Satıcılar</div>
+            <div class="stat-card bg-success">
+                <div class="card-header"><i class="bi bi-shop me-2"></i>Aktif Satıcılar</div>
                 <div class="card-body">
                     <h5 class="card-title"><?= $active_sellers ?></h5>
-                    <p class="card-text">Sistemde aktif olarak satış yapan satıcı sayısı.</p>
+                    <p class="card-text">Hesap durumu aktif olan satıcı sayısı.</p>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-white bg-danger mb-3">
-                <div class="card-header">Pasif Kullanıcılar</div>
+            <div class="stat-card bg-danger">
+                <div class="card-header"><i class="bi bi-person-x-fill me-2"></i>Pasif/Doğrulanmamış Satıcılar</div>
                 <div class="card-body">
                     <h5 class="card-title"><?= $inactive_sellers ?></h5>
-                    <p class="card-text">Sistemde pasif durumda olan kullanıcı sayısı.</p>
+                    <p class="card-text">Hesap durumu pasif veya doğrulanmamış satıcılar.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <h2>Kullanıcılar</h2>
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Adı Soyadı</th>
-                <th>Email</th>
-                <th>Rol</th>
-                <th>Durum</th>
-            </tr>
-        </thead>
-        <tbody>
-        <?php foreach ($all_users as $user) { ?>
-        <tr>
-            <td><?php echo htmlspecialchars($user['id']); ?></td>
-            <td><?php echo htmlspecialchars($user['username']); ?></td>
-            <td><?php echo htmlspecialchars($user['email']); ?></td>
-            <td><?php echo htmlspecialchars($user['role']); ?></td>
-            <td>
-                <?php
-    $user_status = 'Bilinmiyor'; // Varsayılan değer
+    <h2 class="table-section-title"><i class="bi bi-card-list me-2"></i>Kullanıcı Listesi</h2>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Kullanıcı Adı</th>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>Durum</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php if (!empty($all_users)): ?>
+                <?php foreach ($all_users as $user): ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($user['id']); ?></td>
+                    <td><?php echo htmlspecialchars($user['username']); ?></td>
+                    <td><?php echo htmlspecialchars($user['email']); ?></td>
+                    <td><?php echo htmlspecialchars(ucfirst($user['role'])); /* Rolü büyük harfle başlat */ ?></td>
+                    <td>
+                        <?php
+                        $user_status = 'Bilgi Yok';
+                        $status_class = 'status-bilgi-yok';
 
-    // Kullanıcının rolüne göre ilgili tablodan durumu çekelim
-    try {
-        if ($user['role'] === 'seller') {
-            $stmt_seller_status = $conn->prepare("SELECT HesapDurumu FROM Satici WHERE User_ID = :user_id");
-            $stmt_seller_status->bindParam(':user_id', $user['id'], PDO::PARAM_INT);
-            $stmt_seller_status->execute();
-            $seller_data = $stmt_seller_status->fetch(PDO::FETCH_ASSOC);
-            if ($seller_data) {
-                $user_status = ($seller_data['HesapDurumu'] == 1) ? 'Aktif' : 'Pasif (Doğrulama Bekliyor)';
-            } else {
-                $user_status = 'Satıcı Bilgisi Eksik';
-            }
-        } elseif ($user['role'] === 'customer') {
-            $stmt_customer_status = $conn->prepare("SELECT Uyelik_Durumu FROM Musteri WHERE User_ID = :user_id");
-            $stmt_customer_status->bindParam(':user_id', $user['id'], PDO::PARAM_INT);
-            $stmt_customer_status->execute();
-            $customer_data = $stmt_customer_status->fetch(PDO::FETCH_ASSOC);
-            if ($customer_data) {
-                $user_status = ($customer_data['Uyelik_Durumu'] == 1) ? 'Aktif' : 'Pasif';
-            } else {
-                $user_status = 'Müşteri Bilgisi Eksik';
-            }
-        } elseif ($user['role'] === 'admin') {
-            // Adminlerin durumu genellikle her zaman aktif kabul edilir.
-            // Admin tablosunda doğrudan bir aktiflik durumu sütunu yok, Yetki_Seviyesi var.
-            $user_status = 'Aktif';
-        }
-    } catch (PDOException $e) { 
-        error_log("admin_dashboard.php - Kullanıcı durumu çekilirken hata: " . $e->getMessage());
-        $user_status = 'Hata Oluştu';
-    }
-    echo $user_status;
-    ?>
-            </td>
-        </tr>
-        <?php } ?>
-        </tbody>
-    </table>
+                        try {
+                            if ($user['role'] === 'seller') {
+                                $stmt_seller_status = $conn->prepare("SELECT HesapDurumu FROM Satici WHERE User_ID = :user_id");
+                                $stmt_seller_status->bindParam(':user_id', $user['id'], PDO::PARAM_INT);
+                                $stmt_seller_status->execute();
+                                $seller_data = $stmt_seller_status->fetch(PDO::FETCH_ASSOC);
+                                if ($seller_data) {
+                                    if ($seller_data['HesapDurumu'] == 1) {
+                                        $user_status = 'Aktif';
+                                        $status_class = 'status-aktif';
+                                    } else {
+                                        $user_status = 'Pasif/Doğrulanmamış';
+                                        $status_class = 'status-pasif';
+                                    }
+                                } else {
+                                    $user_status = 'Satıcı Bilgisi Eksik';
+                                     $status_class = 'status-satici-bilgisi-eksik';
+                                }
+                            } elseif ($user['role'] === 'customer') {
+                                // Müşteriler için Uyelik_Durumu kontrolü (eğer varsa)
+                                // Şemanızda Musteri.Uyelik_Durumu BOOLEAN DEFAULT TRUE
+                                $stmt_customer_status = $conn->prepare("SELECT Uyelik_Durumu FROM Musteri WHERE User_ID = :user_id");
+                                $stmt_customer_status->bindParam(':user_id', $user['id'], PDO::PARAM_INT);
+                                $stmt_customer_status->execute();
+                                $customer_data = $stmt_customer_status->fetch(PDO::FETCH_ASSOC);
+                                if ($customer_data) {
+                                    if($customer_data['Uyelik_Durumu'] == 1){
+                                        $user_status = 'Aktif';
+                                        $status_class = 'status-aktif';
+                                    } else {
+                                        $user_status = 'Pasif';
+                                        $status_class = 'status-pasif';
+                                    }
+                                } else {
+                                     $user_status = 'Müşteri Bilgisi Eksik';
+                                     $status_class = 'status-satici-bilgisi-eksik'; // Benzer bir stil kullanılabilir
+                                }
+                            } elseif ($user['role'] === 'admin') {
+                                $user_status = 'Aktif';
+                                $status_class = 'status-aktif';
+                            }
+                        } catch (PDOException $e) {
+                            error_log("admin_dashboard.php - Kullanıcı durumu çekilirken hata (ID: ".$user['id']."): " . $e->getMessage());
+                            $user_status = 'Hata';
+                            $status_class = 'status-pasif'; // Hata durumu için
+                        }
+                        echo '<span class="status-badge ' . $status_class . '">' . htmlspecialchars($user_status) . '</span>';
+                        ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="5" class="text-center py-4">Sistemde kayıtlı kullanıcı bulunmamaktadır.</td>
+                </tr>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
 </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
-    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
-    <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

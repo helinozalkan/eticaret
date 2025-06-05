@@ -5,7 +5,7 @@ include_once '../database.php'; // include_once kullanıldı
 
 // Giriş yapmış kullanıcı bilgilerini kontrol et
 $logged_in = isset($_SESSION['user_id']);
-$username = $logged_in ? htmlspecialchars($_SESSION['username']) : null;
+$username_session = $logged_in ? htmlspecialchars($_SESSION['username']) : null; // Session'daki kullanıcı adı
 
 // Satıcı yetki kontrolü
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'seller') {
@@ -16,13 +16,32 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'seller') {
 $seller_user_id = $_SESSION['user_id'];
 $satici_id = null;
 $message = ""; // Mesajları tutacak değişken
+$message_type = "error"; // Mesaj türü (error, success, info)
 
 // Özel istisna sınıfı tanımla
 class ProductManageException extends Exception {}
 
-// SonarQube S1192 hatasını gidermek için parametre adı sabitlerini tanımla
-$param_satici_id = ':satici_id';
-$param_product_id = ':product_id'; // Product ID için de sabit tanımladım
+// Parametre sabitleri
+$param_satici_id_pm = ':satici_id';
+$param_product_id_pm = ':product_id';
+
+// product_action.php'den gelen mesajları al
+if (isset($_SESSION['form_success_message'])) {
+    $message = $_SESSION['form_success_message'];
+    $message_type = "success";
+    unset($_SESSION['form_success_message']);
+}
+if (isset($_SESSION['form_error_message'])) {
+    $message = $_SESSION['form_error_message'];
+    $message_type = "error";
+    unset($_SESSION['form_error_message']);
+}
+if (isset($_SESSION['form_info_message'])) {
+    $message = $_SESSION['form_info_message'];
+    $message_type = "info";
+    unset($_SESSION['form_info_message']);
+}
+
 
 try {
     // Satıcı ID'sini al
@@ -36,82 +55,7 @@ try {
     }
     $satici_id = $satici_data['Satici_ID'];
 
-    // Ürün ekleme işlemi
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product_form'])) { // Formun adını kontrol et
-        $urun_adi = trim(htmlspecialchars($_POST['product_name'] ?? ''));
-        $urun_fiyati = filter_input(INPUT_POST, 'product_price', FILTER_VALIDATE_FLOAT);
-        $stok_adedi = filter_input(INPUT_POST, 'product_stock', FILTER_VALIDATE_INT);
-        $urun_aciklama = trim(htmlspecialchars($_POST['product_description'] ?? ''));
-        $aktiflik_durumu = isset($_POST['product_status']) ? 1 : 0;
-
-        // Validasyonlar
-        if (empty($urun_adi) || $urun_fiyati === false || $urun_fiyati < 0 || $stok_adedi === false || $stok_adedi < 0) {
-            $message = "Ürün eklemek için lütfen tüm alanları doldurun ve geçerli değerler girin.";
-        } else {
-            $urun_gorseli = null;
-            $upload_dir = "../uploads/";
-            $max_file_size = 5 * 1024 * 1024; // 5MB
-
-            // Yükleme dizininin varlığını kontrol et ve yoksa oluştur
-            if (!is_dir($upload_dir)) {
-                if (!mkdir($upload_dir, 0777, true)) {
-                    throw new ProductManageException("Yükleme dizini oluşturulamadı.");
-                }
-            }
-
-            // Dosya yükleme işlemi (isteğe bağlı)
-            if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
-                $file_tmp_path = $_FILES['product_image']['tmp_name'];
-                $file_name = $_FILES['product_image']['name'];
-                $file_size = $_FILES['product_image']['size'];
-                $file_type = $_FILES['product_image']['type'];
-
-                // Güvenli dosya uzantıları ve MIME tipleri kontrolü
-                $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
-                $allowed_mime_types = ['image/jpeg', 'image/png', 'image/gif'];
-                $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-
-                if (!in_array($file_ext, $allowed_extensions) || !in_array($file_type, $allowed_mime_types)) {
-                    $message = "Geçersiz dosya tipi. Yalnızca JPG, JPEG, PNG veya GIF yüklenebilir.";
-                } elseif ($file_size > $max_file_size) {
-                    $message = "Dosya boyutu çok büyük. Maksimum " . ($max_file_size / (1024 * 1024)) . "MB.";
-                } else {
-                    // Benzersiz dosya adı oluştur
-                    $new_file_name = uniqid() . '_' . bin2hex(random_bytes(8)) . '.' . $file_ext;
-                    $upload_path = $upload_dir . $new_file_name;
-
-                    if (move_uploaded_file($file_tmp_path, $upload_path)) {
-                        $urun_gorseli = $new_file_name;
-                    } else {
-                        throw new ProductManageException("Dosya yüklenirken bir hata oluştu.");
-                    }
-                }
-            }
-
-            if (empty($message)) { // Önceki dosya yükleme hataları yoksa devam et
-                $conn->beginTransaction(); // İşlemi başlat
-
-                $stmt_insert_product = $conn->prepare("INSERT INTO Urun (Urun_Adi, Urun_Fiyati, Stok_Adedi, Urun_Gorseli, Urun_Aciklamasi, Aktiflik_Durumu, Satici_ID) VALUES (:urun_adi, :urun_fiyati, :stok_adedi, :urun_gorseli, :urun_aciklamasi, :aktiflik_durumu, :satici_id)");
-                $stmt_insert_product->bindParam(':urun_adi', $urun_adi);
-                $stmt_insert_product->bindParam(':urun_fiyati', $urun_fiyati);
-                $stmt_insert_product->bindParam(':stok_adedi', $stok_adedi, PDO::PARAM_INT);
-                $stmt_insert_product->bindParam(':urun_gorseli', $urun_gorseli);
-                $stmt_insert_product->bindParam(':urun_aciklamasi', $urun_aciklama);
-                $stmt_insert_product->bindParam(':aktiflik_durumu', $aktiflik_durumu, PDO::PARAM_INT);
-                $stmt_insert_product->bindParam($param_satici_id, $satici_id, PDO::PARAM_INT);
-
-                if ($stmt_insert_product->execute()) {
-                    $conn->commit(); // İşlemi onayla
-                    $message = "Ürün başarıyla eklendi.";
-                } else {
-                    $conn->rollBack(); // Hata oluşursa geri al
-                    throw new ProductManageException("Ürün eklenirken veritabanı hatası oluştu.");
-                }
-            }
-        }
-    }
-
-    // Ürün silme işlemi (GET ile tetiklenir)
+    // Ürün silme işlemi (GET ile tetikleniyor)
     if (isset($_GET['delete'])) {
         $product_id_to_delete = filter_input(INPUT_GET, 'delete', FILTER_VALIDATE_INT);
 
@@ -119,79 +63,83 @@ try {
             throw new ProductManageException("Geçersiz ürün ID'si.");
         }
 
-        $conn->beginTransaction(); // İşlemi başlat
+        $conn->beginTransaction();
 
-        // Ürün bilgilerini çek (görseli silmek için)
-        $stmt_get_image = $conn->prepare("SELECT Urun_Gorseli FROM Urun WHERE Urun_ID = " . $param_product_id . " AND Satici_ID = " . $param_satici_id);
-        $stmt_get_image->bindParam($param_product_id, $product_id_to_delete, PDO::PARAM_INT);
-        $stmt_get_image->bindParam($param_satici_id, $satici_id, PDO::PARAM_INT);
+        $stmt_get_image = $conn->prepare("SELECT Urun_Gorseli FROM Urun WHERE Urun_ID = " . $param_product_id_pm . " AND Satici_ID = " . $param_satici_id_pm);
+        $stmt_get_image->bindParam($param_product_id_pm, $product_id_to_delete, PDO::PARAM_INT);
+        $stmt_get_image->bindParam($param_satici_id_pm, $satici_id, PDO::PARAM_INT);
         $stmt_get_image->execute();
-        $product_data = $stmt_get_image->fetch(PDO::FETCH_ASSOC);
+        $product_image_data = $stmt_get_image->fetch(PDO::FETCH_ASSOC);
 
-        if (!$product_data) {
+        if (!$product_image_data) {
             $conn->rollBack();
-            throw new ProductManageException("Ürün bulunamadı veya silme yetkiniz yok.");
+            throw new ProductManageException("Silinecek ürün bulunamadı veya bu ürünü silme yetkiniz yok.");
         }
+        $product_image_to_delete_path = $product_image_data['Urun_Gorseli'] ? "../uploads/" . $product_image_data['Urun_Gorseli'] : null;
 
-        $product_image = $product_data['Urun_Gorseli'];
+        $stmt_delete_product = $conn->prepare("DELETE FROM Urun WHERE Urun_ID = " . $param_product_id_pm . " AND Satici_ID = " . $param_satici_id_pm);
+        $stmt_delete_product->bindParam($param_product_id_pm, $product_id_to_delete, PDO::PARAM_INT);
+        $stmt_delete_product->bindParam($param_satici_id_pm, $satici_id, PDO::PARAM_INT);
 
-        // Ürün silme sorgusu
-        $stmt_delete_product = $conn->prepare("DELETE FROM Urun WHERE Urun_ID = " . $param_product_id . " AND Satici_ID = " . $param_satici_id);
-        $stmt_delete_product->bindParam($param_product_id, $product_id_to_delete, PDO::PARAM_INT);
-        $stmt_delete_product->bindParam($param_satici_id, $satici_id, PDO::PARAM_INT);
-
-        if ($stmt_delete_product->execute()) {
-            // Görseli sil
-            if ($product_image && file_exists($upload_dir . $product_image)) {
-                unlink($upload_dir . $product_image);
+        if ($stmt_delete_product->execute() && $stmt_delete_product->rowCount() > 0) {
+            if ($product_image_to_delete_path && file_exists($product_image_to_delete_path)) {
+                if (!unlink($product_image_to_delete_path)) {
+                     error_log("manage_product.php: Ürün görseli silinemedi: " . $product_image_to_delete_path);
+                }
             }
-            $conn->commit(); // İşlemi onayla
-            $message = "Ürün başarıyla silindi.";
-            // header("Location: manage_product.php"); // Yönlendirme yapmıyoruz, mesaj gösteriyoruz
-            // exit();
+            $conn->commit();
+            $_SESSION['form_success_message'] = "Ürün başarıyla silindi.";
         } else {
             $conn->rollBack();
-            throw new ProductManageException("Ürün silinirken bir hata oluştu.");
+            $_SESSION['form_error_message'] = "Ürün silinirken bir sorun oluştu veya ürün bulunamadı.";
         }
+        header("Location: manage_product.php"); // Sayfayı yeniden yönlendir
+        exit();
     }
 
 } catch (ProductManageException $e) {
-    if ($conn->inTransaction()) {
+    if (isset($conn) && $conn->inTransaction()) {
         $conn->rollBack();
     }
-    error_log("manage_product.php: Ürün Yönetim Hatası: " . $e->getMessage());
-    $message = htmlspecialchars($e->getMessage());
+    error_log("manage_product.php: ProductManageException: " . $e->getMessage());
+    $_SESSION['form_error_message'] = htmlspecialchars($e->getMessage());
+    if (!headers_sent()) {
+        header("Location: manage_product.php");
+        exit();
+    }
 } catch (PDOException $e) {
-    if ($conn->inTransaction()) {
+    if (isset($conn) && $conn->inTransaction()) {
         $conn->rollBack();
     }
-    error_log("manage_product.php: Veritabanı Hatası: " . $e->getMessage());
-    $message = "Veritabanı işlemi sırasında bir sorun oluştu. Lütfen daha sonra tekrar deneyin.";
-} catch (Exception $e) {
-    if ($conn->inTransaction()) {
-        $conn->rollBack();
+    error_log("manage_product.php: PDOException: " . $e->getMessage());
+    $_SESSION['form_error_message'] = "Veritabanı işlemi sırasında bir sorun oluştu.";
+    if (!headers_sent()) {
+        header("Location: manage_product.php");
+        exit();
     }
-    error_log("manage_product.php: Beklenmedik Hata: " . $e->getMessage());
-    $message = "Beklenmedik bir hata oluştu. Lütfen daha sonra tekrar deneyin.";
 }
 
-// Ürünleri listele (her zaman güncel listeyi göster)
+// Ürünleri listele
 $products = [];
 if ($satici_id !== null) {
     try {
-        $query_products = "SELECT Urun_ID, Urun_Adi, Urun_Fiyati, Stok_Adedi, Urun_Gorseli, Aktiflik_Durumu FROM Urun WHERE Satici_ID = :satici_id";
+        // Onay_Durumu sütunu SELECT sorgusundan kaldırıldı.
+        $query_products = "SELECT Urun_ID, Urun_Adi, Urun_Fiyati, Stok_Adedi, Urun_Gorseli, Aktiflik_Durumu, Urun_Hikayesi FROM Urun WHERE Satici_ID = :satici_id ORDER BY Urun_ID DESC";
         $stmt_products = $conn->prepare($query_products);
-        $stmt_products->bindParam($param_satici_id, $satici_id, PDO::PARAM_INT);
+        $stmt_products->bindParam($param_satici_id_pm, $satici_id, PDO::PARAM_INT);
         $stmt_products->execute();
         $products = $stmt_products->fetchAll(PDO::FETCH_ASSOC);
 
     } catch (PDOException $e) {
         error_log("manage_product.php: Ürün listesi çekilirken veritabanı hatası: " . $e->getMessage());
-        $message = "Ürünler listelenirken bir sorun oluştu.";
+        $_SESSION['form_error_message'] = "Ürünler listelenirken bir sorun oluştu.";
         $products = [];
+         if (!headers_sent()) {
+            header("Location: manage_product.php");
+            exit();
+        }
     }
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -201,269 +149,325 @@ if ($satici_id !== null) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ürün Yönetimi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-     <link rel="preconnect" href="https://fonts.googleapis.com">
-     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-     <link href="https://fonts.googleapis.com/css2?family=Edu+AU+VIC+WA+NT+Hand:wght@400..700&family=Montserrat:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Slab:wght@100..900&display=swap" rel="stylesheet">
-     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-     <link rel="preconnect" href="https://fonts.googleapis.com">
-     <link rel="stylesheet" href="css/css.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Courgette&family=Edu+AU+VIC+WA+NT+Hand:wght@400..700&family=Montserrat:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Slab:wght@100..900&display=swap" rel="stylesheet">
-    <link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"
-/>
- <script src="https://code.jquery.com/jquery-1.8.2.min.js" integrity="sha256-9VTS8JJyxvcUR+v+RTLTsd0ZWbzmafmlzMmeZO9RFyk=" crossorigin="anonymous">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/css.css">
     <style>
-       body {
-    background-color: #f4f4f4;
-    font-family: Arial, sans-serif;
-}
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .navbar-custom {
+             background-color: rgb(91, 140, 213);
+        }
+        .main-container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            color: #34495e;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        .product-form-section, .product-list-section {
+            background-color: #fdfdff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.07);
+            margin-bottom: 40px;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.3rem;
+        }
+        .form-control, .form-select {
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+            padding: 0.55rem 0.9rem;
+            font-size: 0.95rem;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: rgb(91, 140, 213);
+            box-shadow: 0 0 0 0.2rem rgba(91, 140, 213, 0.25);
+        }
+        .form-check-input{
+            width: 1em;
+            height: 1em;
+        }
+        .form-check-input:checked {
+            background-color: rgb(91, 140, 213);
+            border-color: rgb(91, 140, 213);
+        }
+        .form-switch .form-check-input {
+            width: 2.5em;
+            height: 1.25em;
+            margin-top: 0.25em;
+        }
+        .form-switch .form-check-label {
+            padding-left: 0.5em;
+            font-size: 1rem;
+        }
 
-.container {
-    width: 80%;
-    margin: 20px auto;
-    background-color: #fff;
-    padding: 20px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
+        .btn-submit-product {
+            background-color: rgb(91, 140, 213);
+            border-color: rgb(91, 140, 213);
+            color: white;
+            padding: 0.6rem 1.3rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 6px;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+        .btn-submit-product:hover {
+            background-color: rgb(70, 120, 190);
+            border-color: rgb(70, 120, 190);
+        }
+        .product-table img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+        .table {
+            margin-bottom: 0;
+        }
+        .table th {
+            font-weight: 600;
+            color: #495057;
+            background-color: #e9ecef;
+            border-bottom-width: 2px;
+        }
+        .table td {
+            vertical-align: middle;
+        }
+        .btn-action {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.85rem;
+            margin-right: 5px;
+        }
+        .btn-edit { background-color: #ffc107; border-color: #ffc107; color: #212529;}
+        .btn-edit:hover { background-color: #e0a800; border-color: #d39e00;}
+        .btn-delete { background-color: #dc3545; border-color: #dc3545; color:white;}
+        .btn-delete:hover { background-color: #c82333; border-color: #bd2130;}
 
-.product-form {
-    margin-bottom: 30px;
-}
+        .alert-custom {
+            border-left-width: 5px;
+            border-radius: 6px;
+            padding: 0.9rem 1.1rem;
+            font-size: 0.95rem;
+        }
+        .alert-danger-custom { border-left-color: #dc3545; }
+        .alert-success-custom { border-left-color: #198754; }
+        .alert-info-custom { border-left-color: #0dcaf0; }
 
-.form-group {
-    display: flex; /* Flexbox kullanarak label ve input'u aynı satıra getir */
-    align-items: center; /* Dikeyde ortala */
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    flex: 0 0 150px; /* Label için sabit genişlik */
-    margin-bottom: 0; /* Margin'i sıfırla */
-    font-weight: bold;
-    padding-right: 10px; /* Label ve input arasına boşluk */
-}
-
-.form-group input[type="text"],
-.form-group input[type="number"],
-.form-group textarea,
-.form-group input[type="file"] {
-    flex: 1; /* Geri kalan alanı doldur */
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-sizing: border-box;
-}
-
-.form-group input[type="file"] {
-    padding: 3px;
-}
-
-.form-group input[type="checkbox"] {
-    width: auto;
-    margin-left: 0; /* Checkbox için varsayılan margin'i sıfırla */
-}
-
-.btn-primary {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.btn-primary:hover {
-    background-color: #0056b3;
-}
-
-.product-table img {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-}
-
-/* Hata ve başarı mesajları için stil */
-.message-container {
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 15px;
-    position: relative;
-    text-align: left;
-    font-size: 14px;
-}
-.error-message {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-.success-message {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-.close-btn {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 1.2em;
-}
+        .status-badge {
+            padding: 0.3em 0.6em;
+            font-size: 0.85em;
+            font-weight: 600;
+            border-radius: 0.25rem;
+        }
+        .status-aktif { background-color: #d1e7dd; color: #0f5132; }
+        .status-pasif { background-color: #f8d7da; color: #842029; }
+        /* Onay durumu ile ilgili sınıflar kaldırıldı, çünkü artık gösterilmeyecek.
+           Eğer başka bir yerde kullanılıyorsa orada bırakılabilir.
+        .status-onay-bekliyor { background-color: #fff3cd; color: #664d03; }
+        .status-onaylandi { background-color: #d1e7dd; color: #0f5132; }
+        .status-reddedildi { background-color: #f8d7da; color: #842029; }
+        */
     </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: rgb(91, 140, 213);">
+<nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
     <div class="container-fluid">
-        <a class="navbar-brand d-flex ms-4" href="#" style="margin-left: 5px;">
-         
-            <div class="baslik fs-3"> ETİCARET</div>
+        <a class="navbar-brand d-flex ms-4" href="../index.php">
+            <div class="baslik fs-3">ELEMEK</div>
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse mt-1 bg-custom" id="navbarSupportedContent">
+        <div class="collapse navbar-collapse mt-1" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0" style="margin-left: 110px;">
-            <li class="nav-item ps-3">
-                    <a id="navbarDropdown" class="nav-link" href="seller_dashboard.php">
-                        Satıcı Paneli
-                    </a>
-                </li>
-                <li class="nav-item ps-3">
-                    <a id="navbarDropdown" class="nav-link" href="seller_manage.php">
-                        Mağaza Yönetimi
-                    </a>
-                </li>
-                <li class="nav-item ps-3">
-                    <a id="navbarDropdown" class="nav-link" href="manage_product.php">
-                        Ürün Yönetimi
-                    </a>
-                </li>
-                <li class="nav-item ps-3">
-                    <a id="navbarDropdown" class="nav-link" href="customer_orders.php">
-                        Sipariş Yönetimi
-                    </a>
-                </li>
+                <li class="nav-item ps-3"><a class="nav-link" href="seller_dashboard.php">Satıcı Paneli</a></li>
+                <li class="nav-item ps-3"><a class="nav-link" href="seller_manage.php">Mağaza Yönetimi</a></li>
+                <li class="nav-item ps-3"><a class="nav-link active" href="manage_product.php">Ürün Yönetimi</a></li>
+                <li class="nav-item ps-3"><a class="nav-link" href="order_manage.php">Sipariş Yönetimi</a></li>
             </ul>
-            <div class="d-flex me-3" style="margin-left: 145px;">
-    <i class="bi bi-person-circle text-white fs-4"></i>
-    <?php if (isset($_SESSION['username'])): ?>
-        <a href="logout.php" class="text-white mt-2 ms-2" style="font-size: 15px; text-decoration: none;">
-            <?php echo htmlspecialchars($_SESSION['username']); ?>
-        </a>
-    <?php else: ?>
-        <a href="login.php" class="text-white mt-2 ms-2" style="font-size: 15px; text-decoration: none;">Giriş Yap</a>
-    <?php endif; ?>
-</div>
+            <div class="d-flex me-3 align-items-center">
+                <i class="bi bi-person-circle text-white fs-4 me-2"></i>
+                <?php if ($logged_in): ?>
+                    <a href="logout.php" class="text-white" style="font-size: 15px; text-decoration: none;"><?php echo $username_session; ?> (Çıkış Yap)</a>
+                <?php else: ?>
+                    <a href="login.php" class="text-white" style="font-size: 15px; text-decoration: none;">Giriş Yap</a>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </nav>
 
+<div class="container main-container">
+    <h1 class="page-title">Ürün Yönetim Paneli</h1>
 
-    <div class="container">
-        <h1>Ürün Yönetimi</h1>
-        <?php if (!empty($message)): ?>
-            <div class="message-container <?php echo strpos($message, 'başarı') !== false ? 'success-message' : 'error-message'; ?>">
-                <span class="close-btn">&times;</span>
-                <?= htmlspecialchars($message) ?>
-            </div>
-        <?php endif; ?>
+    <?php if (!empty($message)): ?>
+        <div class="alert alert-custom <?php echo $message_type === 'success' ? 'alert-success-custom alert-success' : ($message_type === 'info' ? 'alert-info-custom alert-info' : 'alert-danger-custom alert-danger'); ?> alert-dismissible fade show" role="alert">
+            <?php echo htmlspecialchars($message); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
 
-        <form action="manage_product.php" method="POST" enctype="multipart/form-data" class="product-form">
-            <input type="hidden" name="add_product_form" value="1">
-            <div class="form-group">
-                <label for="product_name">Ürün Adı:</label>
-                <input type="text" name="product_name" id="product_name" required>
+    <section class="product-form-section">
+        <h2 class="section-title"><i class="bi bi-plus-circle-fill me-2"></i>Yeni Ürün Ekle</h2>
+        <form action="product_action.php" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+            <input type="hidden" name="add_product" value="1">
+            <div class="row g-3">
+                <div class="col-md-6 mb-3">
+                    <label for="product_name" class="form-label">Ürün Adı:</label>
+                    <input type="text" class="form-control" name="product_name" id="product_name" required>
+                    <div class="invalid-feedback">Lütfen ürün adını girin.</div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="product_price" class="form-label">Fiyat (₺):</label>
+                    <input type="number" class="form-control" name="product_price" id="product_price" step="0.01" required min="0">
+                    <div class="invalid-feedback">Lütfen geçerli bir fiyat girin.</div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="product_stock" class="form-label">Stok Adedi:</label>
+                    <input type="number" class="form-control" name="product_stock" id="product_stock" required min="0">
+                    <div class="invalid-feedback">Lütfen geçerli bir stok adedi girin.</div>
+                </div>
+                <div class="col-md-12 mb-3">
+                    <label for="product_description" class="form-label">Ürün Açıklaması (En fazla 250 karakter):</label>
+                    <textarea class="form-control" name="product_description" id="product_description" rows="3" maxlength="250"></textarea>
+                    <div id="charCountDescription" class="form-text text-end">0 / 250</div>
+                </div>
+                <div class="col-md-12 mb-3">
+                    <label for="product_story" class="form-label">Ürün Hikayesi:</label>
+                    <textarea class="form-control" name="product_story" id="product_story" rows="4" placeholder="Bu ürünün arkasındaki ilhamı, yapım sürecini veya özel anlamını paylaşın..."></textarea>
+                </div>
+                <div class="col-md-7 mb-3">
+                    <label for="product_image" class="form-label">Ürün Görseli:</label>
+                    <input type="file" class="form-control" name="product_image" id="product_image">
+                </div>
+                 <div class="col-md-5 mb-3 align-self-center">
+                    <div class="form-check form-switch mt-3">
+                        <input class="form-check-input" type="checkbox" role="switch" name="product_status" id="product_status" checked>
+                        <label class="form-check-label" for="product_status">Ürün Satışta (Aktif)</label>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="product_price">Fiyat:</label>
-                <input type="number" name="product_price" id="product_price" step="0.01" required>
+            <div class="text-end mt-3">
+                <button type="submit" class="btn btn-submit-product"><i class="bi bi-check-lg me-2"></i>Ürünü Kaydet</button>
             </div>
-            <div class="form-group">
-                <label for="product_stock">Stok Adedi:</label>
-                <input type="number" name="product_stock" id="product_stock" required>
-            </div>
-            <div class="form-group">
-                <label for="product_image">Ürün Görseli:</label>
-                <input type="file" name="product_image" id="product_image">
-            </div>
-            <div class="form-group">
-                <label for="product_description">Ürün Açıklaması:</label>
-                <textarea name="product_description" id="product_description"></textarea>
-            </div>
-            <div class="form-group">
-                <label for="product_status">Aktiflik Durumu:</label>
-                <input type="checkbox" name="product_status" id="product_status" checked>
-            </div>
-            <button type="submit" class="btn btn-primary">Ürün Ekle</button>
         </form>
+    </section>
 
-        <hr>
-
-        <h2>Mevcut Ürünler</h2>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>id</th>
-                    <th>Ürün Adı</th>
-                    <th>Fiyat</th>
-                    <th>Stok</th>
-                    <th>Durum</th>
-                    <th>Görsel</th>
-                    <th>İşlemler</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (!empty($products)): ?>
-                    <?php foreach ($products as $product): ?>
+    <section class="product-list-section mt-5">
+        <h2 class="section-title"><i class="bi bi-list-ul me-2"></i>Mevcut Ürünleriniz</h2>
+        <div class="table-responsive">
+            <table class="table table-hover product-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Görsel</th>
+                        <th>Ürün Adı</th>
+                        <th>Fiyat</th>
+                        <th>Stok</th>
+                        <th>Satış Durumu</th>
+                        <!-- Onay Durumu başlığı kaldırıldı -->
+                        <th>İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($products)): ?>
+                        <?php foreach ($products as $product): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($product['Urun_ID']) ?></td>
+                                <td>
+                                    <img src="<?= $product['Urun_Gorseli'] ? '../uploads/' . htmlspecialchars($product['Urun_Gorseli']) : 'https://placehold.co/60x60/e0e0e0/757575?text=Görsel+Yok' ?>" alt="<?= htmlspecialchars($product['Urun_Adi']) ?>">
+                                </td>
+                                <td><?= htmlspecialchars($product['Urun_Adi']) ?></td>
+                                <td><?= number_format(htmlspecialchars($product['Urun_Fiyati']), 2, ',', '.') ?> TL</td>
+                                <td><?= htmlspecialchars($product['Stok_Adedi']) ?></td>
+                                <td>
+                                    <span class="status-badge <?= $product['Aktiflik_Durumu'] ? 'status-aktif' : 'status-pasif' ?>">
+                                        <?= $product['Aktiflik_Durumu'] ? 'Aktif' : 'Pasif' ?>
+                                    </span>
+                                </td>
+                                <!-- Onay Durumu hücresi (<td>) kaldırıldı -->
+                                <td>
+                                    <a href="edit_product.php?id=<?= $product['Urun_ID'] ?>" class="btn btn-sm btn-edit btn-action" title="Düzenle"><i class="bi bi-pencil-fill"></i></a>
+                                    <form action="manage_product.php?delete=<?= $product['Urun_ID'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Bu ürünü silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')">
+                                        <button type="submit" class="btn btn-sm btn-delete btn-action" title="Sil"><i class="bi bi-trash3-fill"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
                         <tr>
-                            <td><?= htmlspecialchars($product['Urun_ID']) ?></td>
-                            <td><?= htmlspecialchars($product['Urun_Adi']) ?></td>
-                            <td><?= htmlspecialchars($product['Urun_Fiyati']) ?> TL</td>
-                            <td><?= htmlspecialchars($product['Stok_Adedi']) ?></td>
-                            <td><?= $product['Aktiflik_Durumu'] ? 'Aktif' : 'Pasif' ?></td>
-                            <td>
-                                <?php if ($product['Urun_Gorseli']): ?>
-                                    <img src="../uploads/<?= htmlspecialchars($product['Urun_Gorseli']) ?>" alt="Ürün Görseli" width="50">
-                                <?php else: ?>
-                                    Görsel Yok
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <a href="edit_product.php?id=<?= $product['Urun_ID'] ?>" class="btn btn-warning">Düzenle</a>
-                                <a href="manage_product.php?delete=<?= $product['Urun_ID'] ?>" class="btn btn-danger" onclick="return confirm('Bu ürünü silmek istediğinizden emin misiniz?')">Sil</a>
+                            <td colspan="7" class="text-center py-4"> {/* colspan 8'den 7'ye düşürüldü */}
+                                <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                                Henüz mağazanıza ürün eklemediniz.
                             </td>
                         </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="7">Henüz ürün eklenmedi.</td>
-                    </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" xintegrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
-    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
-    <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Mesaj kutularını kapatma işlevi
+    (function () {
+      'use strict'
+      var forms = document.querySelectorAll('.needs-validation')
+      Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+          form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+              event.preventDefault()
+              event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+          }, false)
+        })
+    })();
+
     document.addEventListener("DOMContentLoaded", function() {
-        var closeBtns = document.querySelectorAll(".close-btn");
+        var closeBtns = document.querySelectorAll(".alert .btn-close");
         closeBtns.forEach(function(btn) {
             btn.addEventListener("click", function() {
-                this.parentElement.style.display = "none";
+                this.closest('.alert').style.display = 'none';
             });
         });
+
+        const descriptionTextarea = document.getElementById('product_description');
+        const charCountDescription = document.getElementById('charCountDescription');
+        if (descriptionTextarea && charCountDescription) {
+            descriptionTextarea.addEventListener('input', function() {
+                const currentLength = this.value.length;
+                const maxLength = this.maxLength;
+                charCountDescription.textContent = currentLength + ' / ' + maxLength;
+            });
+            charCountDescription.textContent = descriptionTextarea.value.length + ' / ' + descriptionTextarea.maxLength;
+        }
     });
 </script>
 </body>

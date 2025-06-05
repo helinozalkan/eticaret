@@ -3,62 +3,78 @@
 session_start();
 include('../database.php'); // database.php PDO bağlantısını kuruyor
 
-// Admin yetki kontrolü (ODAK NOKTASI)
+// Admin yetki kontrolü
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header("Location: login.php?status=unauthorized");
     exit();
 }
 
 $logged_in = isset($_SESSION['user_id']);
-$username = $logged_in ? htmlspecialchars($_SESSION['username']) : null;
+$username_session = $logged_in ? htmlspecialchars($_SESSION['username']) : null;
 
 $unverified_sellers = []; // Doğrulama bekleyen satıcıları tutacak dizi
 $message = ""; // Başarı/Hata mesajları
+$message_type = "info"; // Mesaj türü (info, success, error)
 
 try {
     // POST isteği ile gelen doğrulama/reddetme işlemlerini yönet
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['satici_user_id'])) {
-        $satici_user_id = filter_input(INPUT_POST, 'satici_user_id', FILTER_VALIDATE_INT);
+        $satici_user_id_posted = filter_input(INPUT_POST, 'satici_user_id', FILTER_VALIDATE_INT);
         $action = $_POST['action']; // 'approve' veya 'reject'
 
-        if ($satici_user_id === false || $satici_user_id <= 0) {
+        if ($satici_user_id_posted === false || $satici_user_id_posted <= 0) {
             $message = "Geçersiz satıcı ID'si.";
+            $message_type = "error";
         } else {
             // HesapDurumu'nu güncelle: 1 = Onaylandı, 0 = Reddedildi/Doğrulama Bekliyor
-            $new_status = ($action === 'approve') ? 1 : 0; 
+            // Şemanızda HesapDurumu BOOLEAN DEFAULT TRUE (1). Reddedilince veya ilk kayıtta 0 olmalı.
+            $new_status = ($action === 'approve') ? 1 : 0; // Onay = 1, Red = 0
 
-            $conn->beginTransaction(); // İşlemi başlat
+            $conn->beginTransaction();
 
+            // Satici tablosundaki HesapDurumu'nu güncelle
             $stmt_update_seller = $conn->prepare("UPDATE Satici SET HesapDurumu = :new_status WHERE User_ID = :user_id");
             $stmt_update_seller->bindParam(':new_status', $new_status, PDO::PARAM_INT);
-            $stmt_update_seller->bindParam(':user_id', $satici_user_id, PDO::PARAM_INT);
+            $stmt_update_seller->bindParam(':user_id', $satici_user_id_posted, PDO::PARAM_INT);
 
             if ($stmt_update_seller->execute()) {
+                // Eğer satıcı reddedildiyse (HesapDurumu = 0 yapıldıysa), users tablosundaki rolünü 'customer' yapabiliriz
+                // veya hesabı tamamen pasifize edebiliriz. Şimdilik sadece Satici.HesapDurumu güncelleniyor.
+                // İsteğe bağlı: Reddedilen satıcının 'users' tablosundaki 'role'ünü 'customer' olarak değiştirebilirsiniz.
+                // if ($new_status == 0) {
+                //     $stmt_update_user_role = $conn->prepare("UPDATE users SET role = 'customer' WHERE id = :user_id");
+                //     $stmt_update_user_role->bindParam(':user_id', $satici_user_id_posted, PDO::PARAM_INT);
+                //     $stmt_update_user_role->execute();
+                // }
+
                 $conn->commit();
-                $message = "Satıcı başarıyla " . (($action === 'approve') ? 'onaylandı' : 'reddedildi') . ".";
+                $message = "Satıcı başarıyla " . (($action === 'approve') ? 'onaylandı' : 'reddedildi/pasif hale getirildi') . ".";
+                $message_type = "success";
             } else {
                 $conn->rollBack();
                 $message = "Satıcı durumu güncellenirken bir hata oluştu.";
+                $message_type = "error";
             }
         }
     }
 
-    // Doğrulama bekleyen satıcıları çek (veya HesapDurumu 0 olanları)
-    // Satici tablosundaki HesapDurumu = 0 olanları (varsayılan kayıt durumu) çekiyoruz.
-    $query_unverified_sellers = "SELECT 
-                                    u.id AS user_id, 
-                                    u.username, 
+    // Doğrulama bekleyen satıcıları çek (HesapDurumu = 0 olanları ve rolü 'seller' olanları)
+    // Satici tablosundaki HesapDurumu = 0 (varsayılan veya reddedilmiş) ve users.role = 'seller' olanları çekiyoruz.
+    // Bu, yanlışlıkla müşteri olmuş ama satici tablosunda kaydı olanları engeller.
+    $query_unverified_sellers = "SELECT
+                                    u.id AS user_id,
+                                    u.username,
                                     u.email,
                                     s.Magaza_Adi,
                                     s.Ad_Soyad,
                                     s.Adres,
                                     s.HesapDurumu
-                                FROM 
+                                FROM
                                     users u
-                                JOIN 
+                                JOIN
                                     Satici s ON u.id = s.User_ID
-                                WHERE 
-                                    s.HesapDurumu = 0"; // HesapDurumu = 0 olanları çeker
+                                WHERE
+                                    s.HesapDurumu = 0 AND u.role = 'seller'"; // Sadece rolü hala seller olan ve durumu 0 olanlar
     $stmt_unverified_sellers = $conn->prepare($query_unverified_sellers);
     $stmt_unverified_sellers->execute();
     $unverified_sellers = $stmt_unverified_sellers->fetchAll(PDO::FETCH_ASSOC);
@@ -66,10 +82,12 @@ try {
 } catch (PDOException $e) {
     error_log("seller_verification.php: Veritabanı hatası: " . $e->getMessage());
     $message = "Veritabanı hatası oluştu. Lütfen daha sonra tekrar deneyin.";
+    $message_type = "error";
+    if (isset($conn) && $conn->inTransaction()) {
+        $conn->rollBack();
+    }
 }
 ?>
-
-
 
 <!DOCTYPE html>
 <html lang="tr">
@@ -77,221 +95,251 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Satıcı Doğrulama</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/css.css">
     <style>
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f4f4f4;
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f8f9fa;
         }
-        .container {
-            background-color: #fff;
+        .navbar-admin {
+            background-color: rgb(34, 132, 17);
+        }
+        .main-container {
+            background-color: #ffffff;
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            width: 80%;
-            max-width: 800px;
-        }
-        h1 {
-            color: #333;
-            text-align: start;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            margin-top: 20px;
             margin-bottom: 20px;
+        }
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 35px;
+            font-size: 2.5rem;
+            font-weight: 700;
         }
         .seller-card {
-            border: 1px solid #ddd;
+            background-color: #fff;
+            border: 1px solid #e0e0e0; /* Daha yumuşak border */
             border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: transform 0.3s ease-in-out;
+            padding: 25px; /* İç boşluk artırıldı */
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06); /* Hafif gölge */
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            display: flex; /* Flexbox ile iç düzen */
+            flex-direction: column; /* Dikeyde sırala */
+            gap: 15px; /* Elemanlar arası boşluk */
+        }
+        @media (min-width: 768px) { /* Orta ve büyük ekranlarda yatay düzen */
+            .seller-card {
+                flex-direction: row;
+                align-items: center; /* Dikeyde ortala */
+            }
         }
         .seller-card:hover {
-            transform: scale(1.02);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.09);
         }
-        .seller-info {
+        .seller-avatar { /* Satıcı için bir avatar alanı */
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: rgb(34, 132, 17, 0.1); /* Tema renginin açığı */
             display: flex;
             align-items: center;
+            justify-content: center;
+            margin-right: 0; /* Yatay düzende sağ boşluk */
+            margin-bottom: 15px; /* Dikey düzende alt boşluk */
+            flex-shrink: 0; /* Küçülmesini engelle */
         }
-        .seller-info img {
-            width: 100px;
-            height: 100px;
-            border-radius: 10px;
-            margin-right: 20px;
+         @media (min-width: 768px) {
+            .seller-avatar {
+                margin-right: 20px;
+                margin-bottom: 0;
+            }
         }
-        .seller-info div {
-            max-width: 400px;
+        .seller-avatar i {
+            font-size: 2.5rem; /* İkon boyutu */
+            color: rgb(34, 132, 17); /* Ana admin rengi */
+        }
+        .seller-info {
+            flex-grow: 1; /* Kalan alanı doldur */
         }
         .seller-info h5 {
-            margin: 0;
-            color: #333;
+            font-family: 'Playfair Display', serif;
+            margin-bottom: 5px;
+            color: #34495e;
+            font-size: 1.4rem;
+            font-weight: 600;
         }
         .seller-info p {
-            margin: 5px 0;
-            color: #666;
+            margin-bottom: 4px;
+            color: #555;
+            font-size: 0.9rem;
         }
-        .btn-group {
+        .seller-info p strong {
+            color: #333;
+        }
+        .btn-group-actions { /* Buton grubu için yeni sınıf */
             display: flex;
             gap: 10px;
+            margin-top: 15px; /* Dikey düzende üst boşluk */
+            align-self: stretch; /* Dikey düzende butonların genişlemesi için */
         }
-        .btn-group button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease-in-out;
+        @media (min-width: 768px) {
+             .btn-group-actions {
+                margin-left: auto; /* Butonları sağa yasla */
+                margin-top: 0;
+                align-self: center; /* Dikeyde ortala */
+            }
+        }
+        .btn-group-actions .btn {
+            padding: 0.5rem 1rem; /* Buton iç boşluğu */
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 6px;
         }
         .btn-approve {
-            background-color: #28a745;
+            background-color: #198754; /* Bootstrap success */
+            border-color: #198754;
             color: white;
         }
         .btn-approve:hover {
-            background-color: #218838;
+            background-color: #157347;
+            border-color: #146c43;
         }
         .btn-reject {
-            background-color: #dc3545;
+            background-color: #dc3545; /* Bootstrap danger */
+            border-color: #dc3545;
             color: white;
         }
         .btn-reject:hover {
-            background-color: #c82333;
+            background-color: #bb2d3b;
+            border-color: #b02a37;
+        }
+        .alert-custom {
+            border-left-width: 5px;
+            border-radius: 6px;
+            padding: 0.9rem 1.1rem;
+            font-size: 0.95rem;
+        }
+        .alert-danger-custom { border-left-color: #dc3545; }
+        .alert-success-custom { border-left-color: #198754; }
+        .alert-info-custom { border-left-color: #0dcaf0; }
+
+        .no-verification-message {
+            text-align: center;
+            padding: 40px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            color: #6c757d;
+            font-size: 1.1rem;
         }
     </style>
 </head>
-
- <!-- !BOOTSTRAP'S CSS-->
- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <!-- !BOOTSTRAP'S CSS-->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-     <link href="https://fonts.googleapis.com/css2?family=Edu+AU+VIC+WA+NT+Hand:wght@400..700&family=Montserrat:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Slab:wght@100..900&display=swap" rel="stylesheet">
-     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-     <link rel="preconnect" href="https://fonts.googleapis.com">
-     <link rel="stylesheet" href="css/css.css">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Courgette&family=Edu+AU+VIC+WA+NT+Hand:wght@400..700&family=Montserrat:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Slab:wght@100..900&display=swap" rel="stylesheet">
-    <link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"
-/>
- <script src="https://code.jquery.com/jquery-1.8.2.min.js" integrity="sha256-9VTS8JJyxvcUR+v+RTLTsd0ZWbzmafmlzMmeZO9RFyk=" crossorigin="anonymous">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: rgb(34, 132, 17);">
+<nav class="navbar navbar-expand-lg navbar-dark navbar-admin">
     <div class="container-fluid">
-        
-    <a class="navbar-brand d-flex ms-4" href="../index.php" style="margin-left: 5px;">
-         
-            <div class="baslik fs-3"> ELEMEK</div>
+        <a class="navbar-brand d-flex ms-4" href="../index.php">
+            <div class="baslik fs-3">Admin Paneli</div>
         </a>
-
-                
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse mt-1 bg-custom" id="navbarSupportedContent">
+        <div class="collapse navbar-collapse mt-1" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0" style="margin-left: 110px;">
                 <li class="nav-item ps-3">
-                    <a id="navbarDropdown" class="nav-link" href="admin_dashboard.php">
-                        Admin Paneli
+                    <a class="nav-link" href="admin_dashboard.php">
+                        <i class="bi bi-speedometer2 me-1"></i>Kontrol Paneli
                     </a>
                 </li>
                 <li class="nav-item ps-3">
-                    <a id="navbarDropdown" class="nav-link" href="admin_user.php">
-                        Kullanıcı Yönetimi
+                    <a class="nav-link" href="admin_user.php">
+                        <i class="bi bi-people-fill me-1"></i>Kullanıcı Yönetimi
                     </a>
                 </li>
                 <li class="nav-item ps-3">
-                    <a id="navbarDropdown" class="nav-link" href="seller_verification.php">
-                        Satıcı Doğrulama
+                    <a class="nav-link active" href="seller_verification.php">
+                        <i class="bi bi-patch-check-fill me-1"></i>Satıcı Doğrulama
                     </a>
                 </li>
-                <li class="nav-item ps-3">
-                    <a id="navbarDropdown" class="nav-link" href="product_verification.php">
-                        Ürün Doğrulama
-                    </a>
-                </li>
+                <!-- Ürün Doğrulama linki zaten kaldırılmıştı -->
             </ul>
-
-            <div class="d-flex me-3" style="margin-left: 145px;">
-    <i class="bi bi-person-circle text-white fs-4"></i>
-    <?php if (isset($_SESSION['username'])): ?>
-        <!-- Kullanıcı giriş yaptıysa -->
-        <a href="logout.php" class="text-white mt-2 ms-2" style="font-size: 15px; text-decoration: none;">
-            <?php echo htmlspecialchars($_SESSION['username']); ?> <!-- Kullanıcı adı gösteriliyor -->
-        </a>
-    <?php else: ?>
-        <!-- Kullanıcı giriş yapmamışsa -->
-        <a href="login.php" class="text-white mt-2 ms-2" style="font-size: 15px; text-decoration: none;">
-            Giriş Yap
-        </a>
-    <?php endif; ?>
-</div>
+            <div class="d-flex me-3 align-items-center">
+                <i class="bi bi-person-circle text-white fs-4 me-2"></i>
+                <?php if ($logged_in): ?>
+                    <a href="logout.php" class="text-white" style="font-size: 15px; text-decoration: none;"><?php echo $username_session; ?> (Çıkış Yap)</a>
+                <?php else: ?>
+                    <a href="login.php" class="text-white" style="font-size: 15px; text-decoration: none;">Giriş Yap</a>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </nav>
 
-
-<div class="container">
-    <h1>Satıcı Doğrulama</h1>
+<div class="container main-container">
+    <h1 class="page-title"><i class="bi bi-person-check-fill me-2"></i>Satıcı Doğrulama İşlemleri</h1>
 
     <?php if (!empty($message)): ?>
-        <div class="message-container success-message"> <span class="close-btn">&times;</span>
-            <?= htmlspecialchars($message) ?>
+        <div class="alert alert-custom <?php echo $message_type === 'success' ? 'alert-success-custom alert-success' : ($message_type === 'info' ? 'alert-info-custom alert-info' : 'alert-danger-custom alert-danger'); ?> alert-dismissible fade show" role="alert">
+            <?php echo htmlspecialchars($message); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     <?php endif; ?>
 
-    <?php if (empty($unverified_sellers)): ?>
-        <p>Doğrulama bekleyen satıcı bulunmamaktadır.</p>
+    <?php if (empty($unverified_sellers) && empty($message) || (empty($unverified_sellers) && $message_type !== 'error' && $message_type !== 'success') ): ?>
+         <div class="no-verification-message">
+            <i class="bi bi-person-badge fs-1 mb-3 d-block"></i>
+            Şu anda doğrulama bekleyen satıcı bulunmamaktadır.
+        </div>
     <?php else: ?>
         <?php foreach ($unverified_sellers as $seller): ?>
             <div class="seller-card">
-                <div class="seller-info">
-                    <img src="../images/magazalogo.png" alt="Satıcı Görseli"> <div>
-                        <h5><?= htmlspecialchars($seller['Magaza_Adi']) ?></h5>
-                        <p><?= htmlspecialchars($seller['Ad_Soyad']) ?> (<?= htmlspecialchars($seller['username']) ?>)</p>
-                        <p><?= htmlspecialchars($seller['email']) ?></p>
-                        <p><?= htmlspecialchars($seller['Adres']) ?></p>
-                        <p>Durum: <?php
-                            if ($seller['HesapDurumu'] == 1) {
-                                echo 'Aktif';
-                            } else {
-                                // HesapDurumu 0 ise, bu ya yeni kaydolmuş beklemede ya da reddedilmiş demektir.
-                                // Reddedilenleri "Doğrulama Bekliyor"dan ayırmak için veritabanında ek bir sütuna ihtiyacımız var.
-                                // Şu anki durumda, HesapDurumu 0 olanları "Doğrulama Bekliyor / Pasif" olarak göstereceğiz.
-                                echo 'Doğrulama Bekliyor / Pasif'; // Admin dashboard ile uyumlu
-                            }
-                        ?></p>
-                    </div>
+                <div class="seller-avatar">
+                    <i class="bi bi-shop"></i> <!-- Mağaza ikonu -->
                 </div>
-                <div class="btn-group">
-                    <form action="seller_verification.php" method="POST" style="display:inline;">
+                <div class="seller-info">
+                    <h5><?= htmlspecialchars($seller['Magaza_Adi']) ?></h5>
+                    <p><strong>Yetkili:</strong> <?= htmlspecialchars($seller['Ad_Soyad']) ?> (Kullanıcı Adı: <?= htmlspecialchars($seller['username']) ?>)</p>
+                    <p><strong>E-posta:</strong> <?= htmlspecialchars($seller['email']) ?></p>
+                    <p><strong>Adres:</strong> <?= htmlspecialchars($seller['Adres'] ?: 'Belirtilmemiş') ?></p>
+                    <p><strong>Mevcut Durum:</strong> <span class="badge bg-warning text-dark">Doğrulama Bekliyor</span></p>
+                </div>
+                <div class="btn-group-actions">
+                    <form action="seller_verification.php" method="POST" class="d-inline">
                         <input type="hidden" name="satici_user_id" value="<?= htmlspecialchars($seller['user_id']) ?>">
                         <input type="hidden" name="action" value="approve">
-                        <button type="submit" class="btn-approve">Onayla</button>
+                        <button type="submit" class="btn btn-approve"><i class="bi bi-check-circle-fill me-1"></i>Onayla</button>
                     </form>
-                    <form action="seller_verification.php" method="POST" style="display:inline;">
+                    <form action="seller_verification.php" method="POST" class="d-inline">
                         <input type="hidden" name="satici_user_id" value="<?= htmlspecialchars($seller['user_id']) ?>">
                         <input type="hidden" name="action" value="reject">
-                        <button type="submit" class="btn-reject">Reddet</button>
+                        <button type="submit" class="btn btn-reject"><i class="bi bi-x-circle-fill me-1"></i>Reddet/Pasif Yap</button>
                     </form>
                 </div>
             </div>
         <?php endforeach; ?>
     <?php endif; ?>
-</div> 
+</div>
 
-
-
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    <!-- !BOOTSTRAP'S jS-->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <!-- !BOOTSTRAP'S jS-->
-    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
-    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
-    <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Mesaj kutularını kapatma işlevi
+    document.addEventListener("DOMContentLoaded", function() {
+        var closeBtns = document.querySelectorAll(".alert .btn-close");
+        closeBtns.forEach(function(btn) {
+            btn.addEventListener("click", function() {
+                this.closest('.alert').style.display = 'none';
+            });
+        });
+    });
+</script>
 </body>
 </html>
