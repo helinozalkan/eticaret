@@ -360,8 +360,10 @@ try {
             <div class="a container bg-white mb-3" style="border-radius: 5%;">
               <div class="row mt-5 mb-5">
                 <div class="col-6 text-center">
-                  <img src="uploads/<?= htmlspecialchars($urun['Urun_Gorseli']) ?>" class="img-grow"
+                  <a href="php/product_detail.php?id=<?= htmlspecialchars($urun['Urun_ID']) ?>">
+                    <img src="uploads/<?= htmlspecialchars($urun['Urun_Gorseli']) ?>" class="img-grow"
                     style="border-radius:5%; height: 230px; width: 230px;">
+                  </a>
                 </div>
                 <div class="col-6">
                   <div class="baslik3 fw-bold" style="font-size: 21px;"><?= htmlspecialchars($urun['Urun_Adi']) ?></div>
