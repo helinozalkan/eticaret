@@ -131,8 +131,9 @@
   </div>
 
   <div class="text-center mt-4">
-    <a href="index.php" class="btn btn-secondary">Sen De Bize Katıl!</a>
-  </div>
+    <a href="seller_register.php" class="btn btn-secondary">Sen De Bize Katıl!</a>
+</div>
+
 </div>
 
 <canvas class="fireworks"></canvas>

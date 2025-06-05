@@ -205,7 +205,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         button[type="submit"] {
             width: 100%;
             padding: 12px;
-            background-color:rgb(155, 10, 109);
+            background-color:rgb(91, 140, 213);
             border: none;
             border-radius: 5px;
             color: #fff;
@@ -214,7 +214,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             transition: background-color 0.3s ease;
         }
         button[type="submit"]:hover {
-            background-color:rgb(125, 8, 89);
+            background-color:rgb(91, 140, 213);
         }
         .error-message, .success-message {
             padding: 12px;
@@ -246,7 +246,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .form-link {
             display: block;
             margin-top: 20px;
-            color: rgb(155, 10, 109);
+            color: rgb(91, 140, 213);
             text-decoration: none;
             font-size: 0.9em;
             text-align: center;
@@ -301,6 +301,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </form>
         <a href="login.php" class="form-link">Zaten bir hesabınız var mı? Giriş Yapın</a>
         <a href="register.php" class="form-link">Müşteri olarak mı kayıt olmak istiyorsunuz?</a>
+        <a href="../index.php" class="form-link">Ana Sayfaya Dön</a>
+
     </div>
 
     <script>
@@ -357,5 +359,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             });
         });
     </script>
+
+    
 </body>
 </html>

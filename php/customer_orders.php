@@ -47,7 +47,8 @@ try {
     <title>Siparişlerim</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/eticaret/css/css.css"> <style>
+    <link rel="stylesheet" href="/eticaret/css/css.css">
+    <style>
         body { background-color: #f8f9fa; }
         .container { max-width: 960px; }
         .table thead th { background-color: #e9ecef; }
@@ -66,7 +67,7 @@ try {
         </a>
         <div class="collapse navbar-collapse">
             <ul class="navbar-nav me-auto">
-                </ul>
+            </ul>
             <div class="d-flex me-3 align-items-center">
                 <i class="bi bi-person-circle text-white fs-4"></i>
                 <?php if (isset($_SESSION['username'])): ?>
@@ -132,8 +133,13 @@ try {
             </div>
         </div>
     <?php endif; ?>
+
+    <div class="text-center mt-4">
+        <a class="btn btn-secondary" href="../index.php">Ana Sayfaya Dön</a>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

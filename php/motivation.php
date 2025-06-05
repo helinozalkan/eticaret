@@ -76,6 +76,7 @@ Bu yolculukta, şehirden köye, atölyeden evlere kadar her üreticinin emeğine
 <div class="signature">
 Sevgi ve saygıyla,<br>
 Eticaret Ekibi
+
 </div>
 
         </div>
@@ -178,5 +179,8 @@ Eticaret Ekibi
 
         animate();
     </script>
+
+   
+
 </body>
 </html>

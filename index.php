@@ -90,12 +90,7 @@ try {
 </li>
 
 
-
-
         </ul>
-
-        
-
           <a href="php/favourite.php">
           <i class="bi bi-heart text-white fs-5" style="margin-left: 20px;"></i>
           </a>
