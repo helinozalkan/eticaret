@@ -69,79 +69,32 @@ try {
 
       <div class="collapse navbar-collapse mt-1 bg-custom" id="navbarSupportedContent">
         <ul class="navbar-nav  me-auto mb-2 mb-lg-0 " style="margin-left: 110px;">
-          <li class="nav-item dropdown ps-3">
-            <button id="navbarDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
-              Ana sayfa
-             </button>
-            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-             <a class="dropdown-item" href="php/girisimciler.php">Girişimci Sayısı</a>
-             <a class="dropdown-item" href="#">Yeni Ürünlerimiz</a>
-             <a class="dropdown-item" href="php/eticaret-ekibi.php">Eticaret Ekibi</a>
-             <a class="dropdown-item" href="#">İndirim Haberleri</a>
-             <a class="dropdown-item" href="#">Popüler Ürünler</a>
-             <a class="dropdown-item" href="#">Başarılı Satıcılar</a>
-           </div>
-          </li>
-          
-          <li class="nav-item dropdown ps-3">
-            <button id="navbarDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown"
-              aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
-              Siparişlerim
-            </button>
-            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-              <a class="dropdown-item" href="php/customer_orders.php">Sipariş Detay</a>
-              <a class="dropdown-item" href="#">Sipariş Listem</a>
-              <a class="dropdown-item" href="#">Geçmiş Siparişlerim</a>
-            </div>
-          </li>
+          <li class="nav-item ps-3">
+  <a class="nav-link" href="php/girisimciler.php">Girişimcilerimiz</a>
+</li>
+
+<li class="nav-item ps-3">
+  <a class="nav-link" href="php/customer_orders.php">Sipariş İşlemleri</a>
+</li>
+
+<li class="nav-item ps-3">
+  <a class="nav-link" href="php/seller_register.php">Satıcı Ol</a>
+</li>
+
+<li class="nav-item ps-3">
+  <a class="nav-link" href="php/eticaret-ekibi.php">Ekibimiz</a>
+</li>
+
+<li class="nav-item ps-3">
+  <a class="nav-link" href="php/motivation.php">Ekipten Mesaj Var!</a>
+</li>
 
 
-          <li class="nav-item dropdown ps-3">
-            <button id="navbarDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown"
-              aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
-              Mağazalar
-            </button>
-            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-              <a class="dropdown-item" href="php/seller_register.php">Satıcı oluştur</a>
-              <a class="dropdown-item" href="php/motivation.php">Eticaret Ekibinden Mesaj Var</a>
-              <a class="dropdown-item" href="#">Kategoriler</a>
-              <a class="dropdown-item" href="#">Özellikler</a>
-              <a class="dropdown-item" href="#">Satıcı Profili</a>
-            </div>
-          </li>
-
-          <li class="nav-item dropdown ps-3">
-            <button id="navbarDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown"
-              aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
-              Yorumlar
-            </button>
-            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-              <a class="dropdown-item" href="#">Yorum Yaz</a>
-              <a class="dropdown-item" href="#">Yorum Oku</a>
-              <a class="dropdown-item" href="#">Yorum Analizi</a>
-              <a class="dropdown-item" href="#">Favori Yorumlar</a>
-
-            </div>
-          </li>
-
-
-
-          <li class="nav-item dropdown ps-3">
-            <button id="navbarDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown"
-              aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
-              Hakkımızda
-            </button>
-            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-              <a class="dropdown-item" href="#">Hakkımızda</a>
-              <a class="dropdown-item" href="#">Gizlilik</a>
-            </div>
-          </li>
 
 
         </ul>
 
-        <div style="margin-left: 0px;">
-          <i class="bi bi-search text-white fs-5"></i>
+        
 
           <a href="php/favourite.php">
           <i class="bi bi-heart text-white fs-5" style="margin-left: 20px;"></i>
@@ -360,10 +313,8 @@ try {
             <div class="a container bg-white mb-3" style="border-radius: 5%;">
               <div class="row mt-5 mb-5">
                 <div class="col-6 text-center">
-                  <a href="php/product_detail.php?id=<?= htmlspecialchars($urun['Urun_ID']) ?>">
-                    <img src="uploads/<?= htmlspecialchars($urun['Urun_Gorseli']) ?>" class="img-grow"
+                  <img src="uploads/<?= htmlspecialchars($urun['Urun_Gorseli']) ?>" class="img-grow"
                     style="border-radius:5%; height: 230px; width: 230px;">
-                  </a>
                 </div>
                 <div class="col-6">
                   <div class="baslik3 fw-bold" style="font-size: 21px;"><?= htmlspecialchars($urun['Urun_Adi']) ?></div>
@@ -430,8 +381,7 @@ try {
         </div>
 
         <div class="col-6 d-flex align-items-center mb-5 mt-0">
-          <img src="images/zey.jpeg" alt="Ünlü Kadın"
-            style="border-radius: 50%; height: 70px; width: 70px; margin-left: 10px;">
+          <img src="images/zey.jpeg" alt="Ünlü Kadın"style="border-radius: 50%; height: 70px; width: 70px; margin-left: 10px;">
           <div class="ms-3">
 
             <div>Zeynep Nuriye Tekin</div>
@@ -557,7 +507,7 @@ try {
       Yorumlar
     </div>
     <div class="baslik3" style="font-size: 50px;">
-      Girişimcilerde Gelen Yorumlar
+      Girişimcilerden Gelen Yorumlar
     </div>
   </div>
 </div>
