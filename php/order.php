@@ -58,7 +58,7 @@ try {
 
     // 4. Sepetteki Ürünleri Çek
     $stmt_cart_items = $conn->prepare(
-        "SELECT s.Urun_ID, s.Miktar, s.Boyut, u.Urun_Adi, u.Urun_Fiyati, u.Stok_Adedi, u.Aktiflik_Durumu
+        "SELECT s.Urun_ID, s.Miktar, u.Urun_Adi, u.Urun_Fiyati, u.Stok_Adedi, u.Aktiflik_Durumu
          FROM Sepet s
          JOIN Urun u ON s.Urun_ID = u.Urun_ID
          WHERE s.Musteri_ID = " . PARAM_MUSTERI_ID_OP
@@ -89,7 +89,7 @@ try {
             'urun_id' => $item['Urun_ID'],
             'miktar' => $item['Miktar'],
             'fiyat' => $urun_fiyati_siparis_aninda,
-            'boyut' => $item['Boyut'] // Boyut bilgisini de saklayalım
+        
         ];
     }
 
@@ -99,16 +99,33 @@ try {
 
     // 6. Teslimat ve Fatura Adresleri (Şimdilik varsayılan, checkout.php'den alınmalı)
     // Bu bilgiler normalde checkout sürecinde kullanıcıdan alınır veya kayıtlı adreslerinden seçtirilir.
-    $teslimat_adresi = "Varsayılan Teslimat Adresi - Kullanıcı ID: " . $user_id; // Placeholder
-    $fatura_adresi = "Varsayılan Fatura Adresi - Kullanıcı ID: " . $user_id;   // Placeholder
-    // Ödeme yöntemi de burada belirlenmeli veya checkout'tan gelmeli.
+    // YENİ KOD
+    // checkout.php formundan gelen teslimat ve fatura adreslerini alıyoruz.
+    // htmlspecialchars ile güvenlik önlemi alıyoruz.
+    $shipping_name = htmlspecialchars($_POST['shipping_name'] ?? '');
+    $shipping_address = htmlspecialchars($_POST['shipping_address'] ?? '');
+    $shipping_city = htmlspecialchars($_POST['shipping_city'] ?? '');
+    $shipping_zip = htmlspecialchars($_POST['shipping_zip'] ?? '');
 
+    // Teslimat adresini tek bir metin olarak birleştirelim
+    $teslimat_adresi = $shipping_name . ", " . $shipping_address . ", " . $shipping_zip . " " . $shipping_city;
+
+    // Fatura adresi, teslimat ile aynıysa onu kullan, değilse fatura formu verilerini al
+    if (isset($_POST['billing_same_as_shipping'])) {
+        $fatura_adresi = $teslimat_adresi;
+    } else {
+        $billing_name = htmlspecialchars($_POST['billing_name'] ?? '');
+        $billing_address = htmlspecialchars($_POST['billing_address'] ?? '');
+        $billing_city = htmlspecialchars($_POST['billing_city'] ?? '');
+        $billing_zip = htmlspecialchars($_POST['billing_zip'] ?? '');
+        $fatura_adresi = $billing_name . ", " . $billing_address . ", " . $billing_zip . " " . $billing_city;
+    }
     // 7. Veritabanı İşlemleri (Transaction)
     $conn->beginTransaction();
 
     // Siparis tablosuna ekle
-    $siparis_tarihi = date('Y-m-d H:i:s');
-    $siparis_durumu = 'Ödeme Bekleniyor'; // Veya 'Yeni Sipariş', 'Hazırlanıyor' vb.
+    $siparis_tarihi = date('Y-m-d');
+    $siparis_durumu = 'Beklemede'; // Veya 'Yeni Sipariş', 'Hazırlanıyor' vb.
 
     $stmt_insert_order = $conn->prepare(
         "INSERT INTO Siparis (Musteri_ID, Siparis_Tarihi, Siparis_Tutari, Teslimat_Adresi, Fatura_Adresi, Siparis_Durumu)
@@ -129,15 +146,14 @@ try {
 
     // SiparisUrun tablosuna ürünleri ekle
     $stmt_insert_order_product = $conn->prepare(
-        "INSERT INTO SiparisUrun (Siparis_ID, Urun_ID, Miktar, Fiyat, Boyut)
-         VALUES (" . PARAM_SIPARIS_ID_OP . ", " . PARAM_URUN_ID_OP . ", " . PARAM_MIKTAR_OP . ", " . PARAM_FIYAT_OP . ", :boyut)"
+        "INSERT INTO SiparisUrun (Siparis_ID, Urun_ID, Miktar, Fiyat)
+         VALUES (" . PARAM_SIPARIS_ID_OP . ", " . PARAM_URUN_ID_OP . ", " . PARAM_MIKTAR_OP . ", " . PARAM_FIYAT_OP . ")"
     );
     foreach ($urunler_siparis_icin as $urun) {
         $stmt_insert_order_product->bindParam(PARAM_SIPARIS_ID_OP, $siparis_id, PDO::PARAM_INT);
         $stmt_insert_order_product->bindParam(PARAM_URUN_ID_OP, $urun['urun_id'], PDO::PARAM_INT);
         $stmt_insert_order_product->bindParam(PARAM_MIKTAR_OP, $urun['miktar'], PDO::PARAM_INT);
         $stmt_insert_order_product->bindParam(PARAM_FIYAT_OP, $urun['fiyat']);
-        $stmt_insert_order_product->bindParam(':boyut', $urun['boyut'], PDO::PARAM_INT); // Boyut için de parametre
 
         if (!$stmt_insert_order_product->execute()) {
             $conn->rollBack();

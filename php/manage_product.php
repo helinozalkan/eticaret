@@ -84,7 +84,7 @@ try {
         if ($stmt_delete_product->execute() && $stmt_delete_product->rowCount() > 0) {
             if ($product_image_to_delete_path && file_exists($product_image_to_delete_path)) {
                 if (!unlink($product_image_to_delete_path)) {
-                     error_log("manage_product.php: Ürün görseli silinemedi: " . $product_image_to_delete_path);
+                    error_log("manage_product.php: Ürün görseli silinemedi: " . $product_image_to_delete_path);
                 }
             }
             $conn->commit();
@@ -102,21 +102,18 @@ try {
         $conn->rollBack();
     }
     error_log("manage_product.php: ProductManageException: " . $e->getMessage());
-    $_SESSION['form_error_message'] = htmlspecialchars($e->getMessage());
-    if (!headers_sent()) {
-        header("Location: manage_product.php");
-        exit();
-    }
+    $message = htmlspecialchars($e->getMessage()); // Mesajı session yerine doğrudan değişkene ata
+    $message_type = "error";
+    // Yönlendirme satırları kaldırıldı.
 } catch (PDOException $e) {
     if (isset($conn) && $conn->inTransaction()) {
         $conn->rollBack();
     }
     error_log("manage_product.php: PDOException: " . $e->getMessage());
-    $_SESSION['form_error_message'] = "Veritabanı işlemi sırasında bir sorun oluştu.";
-    if (!headers_sent()) {
-        header("Location: manage_product.php");
-        exit();
-    }
+    $message = "Veritabanı işlemi sırasında bir sorun oluştu."; // Mesajı session yerine doğrudan değişkene ata
+    $message_type = "error";
+    // Yönlendirme satırları kaldırıldı.
+
 }
 
 // Ürünleri listele
@@ -132,13 +129,11 @@ if ($satici_id !== null) {
 
     } catch (PDOException $e) {
         error_log("manage_product.php: Ürün listesi çekilirken veritabanı hatası: " . $e->getMessage());
-        $_SESSION['form_error_message'] = "Ürünler listelenirken bir sorun oluştu.";
+        $message = "Ürünler listelenirken bir sorun oluştu."; // Mesajı session yerine doğrudan değişkene ata
+        $message_type = "error";
         $products = [];
-         if (!headers_sent()) {
-            header("Location: manage_product.php");
-            exit();
-        }
-    }
+        // Yönlendirme satırları kaldırıldı.
+}
 }
 ?>
 
@@ -160,7 +155,7 @@ if ($satici_id !== null) {
             background-color: #f8f9fa;
         }
         .navbar-custom {
-             background-color: rgb(91, 140, 213);
+            background-color: rgb(91, 140, 213);
         }
         .main-container {
             background-color: #ffffff;
@@ -390,7 +385,6 @@ if ($satici_id !== null) {
                         <th>Fiyat</th>
                         <th>Stok</th>
                         <th>Satış Durumu</th>
-                        <!-- Onay Durumu başlığı kaldırıldı -->
                         <th>İşlemler</th>
                     </tr>
                 </thead>
@@ -410,7 +404,6 @@ if ($satici_id !== null) {
                                         <?= $product['Aktiflik_Durumu'] ? 'Aktif' : 'Pasif' ?>
                                     </span>
                                 </td>
-                                <!-- Onay Durumu hücresi (<td>) kaldırıldı -->
                                 <td>
                                     <a href="edit_product.php?id=<?= $product['Urun_ID'] ?>" class="btn btn-sm btn-edit btn-action" title="Düzenle"><i class="bi bi-pencil-fill"></i></a>
                                     <form action="manage_product.php?delete=<?= $product['Urun_ID'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Bu ürünü silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')">

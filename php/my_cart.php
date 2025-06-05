@@ -24,7 +24,7 @@ try {
     $musteri_data = $stmt_musteri->fetch(PDO::FETCH_ASSOC);
 
     if ($musteri_data) {
-        $musteri_id = $musteri_data['Musteri_ID'];  // Müşteri ID'sini al
+        $musteri_id = $musteri_data['Musteri_ID']; // Müşteri ID'sini al
     } else {
         // Eğer müşteri ID'si yoksa, sepeti boş göster ve hata logla
         error_log("my_cart.php: Musteri kaydı bulunamadı User_ID: " . $user_id);
@@ -35,9 +35,9 @@ try {
     // Şimdi doğru müşteri ID'sini kullanarak sepet verilerini çekebilirsiniz
     if ($musteri_id !== null) {
         $query_cart = "SELECT Sepet.Sepet_ID, Sepet.Boyut, Sepet.Miktar, Sepet.Eklenme_Tarihi, Urun.Urun_Adi, Urun.Urun_Fiyati, Urun.Urun_Gorseli
-                      FROM Sepet
-                      JOIN Urun ON Sepet.Urun_ID = Urun.Urun_ID
-                      WHERE Sepet.Musteri_ID = :musteri_id";
+                         FROM Sepet
+                         JOIN Urun ON Sepet.Urun_ID = Urun.Urun_ID
+                         WHERE Sepet.Musteri_ID = :musteri_id";
         $stmt_cart = $conn->prepare($query_cart);
         $stmt_cart->bindParam(':musteri_id', $musteri_id, PDO::PARAM_INT);
         $stmt_cart->execute();
@@ -107,7 +107,7 @@ foreach ($cart_items as $item) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sepetim</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-          xintegrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Edu+AU+VIC+WA+NT+Hand:wght@400..700&family=Montserrat:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Slab:wght@100..900&display=swap"
@@ -168,6 +168,7 @@ foreach ($cart_items as $item) {
 
     .cart-table td {
         font-size: 14px;
+        vertical-align: middle; /* İçeriklerin dikeyde ortalanması için */
     }
 
     .cart-table tr:hover {
@@ -188,33 +189,17 @@ foreach ($cart_items as $item) {
         gap: 10px;
     }
 
-    /* .action-buttons a {  -- Bu kısım artık kullanılmayacak, button'a dönüştürüldü */
-    /* background-color: #007bff; */
-    /* color: white; */
-    /* border: none; */
-    /* padding: 5px 10px; */
-    /* cursor: pointer; */
-    /* border-radius: 5px; */
-    /* text-decoration: none; */
-    /* display: inline-block; */
-    /* text-align: center; */
-    /* } */
-
-    /* .action-buttons a:hover { */
-    /* background-color: #0056b3; */
-    /* } */
-
     .action-buttons .delete-button {
         background-color: rgb(155, 10, 109);
-        color: white; /* Button için renk ekledim */
-        border: none; /* Button için border kaldırdım */
-        padding: 5px 10px; /* Button için padding ekledim */
-        cursor: pointer; /* Button için cursor ekledim */
-        border-radius: 5px; /* Button için border-radius ekledim */
+        color: white; 
+        border: none; 
+        padding: 5px 10px; 
+        cursor: pointer; 
+        border-radius: 5px; 
     }
 
     .action-buttons .delete-button:hover {
-        background-color: rgb(155, 10, 109);
+        background-color: rgb(125, 8, 88);
     }
 
     .btn-success {
@@ -236,26 +221,13 @@ foreach ($cart_items as $item) {
         align-items: center;
     }
 
-    .quantity-controls button {
-        background-color: rgb(0, 0, 0);
-        color: white;
-        border: none;
-        padding: 5px 10px;
-        cursor: pointer;
-        border-radius: 5px;
-        margin: 0 5px;
+    .quantity-controls .btn {
+        min-width: 30px;
     }
 
-    .quantity-controls button:hover {
-        background-color: rgb(0, 0, 0);
-    }
-
-    .quantity-controls input {
-        width: 50px;
+    .quantity-controls span {
+        min-width: 30px;
         text-align: center;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        padding: 5px;
     }
 </style>
 
@@ -283,7 +255,7 @@ foreach ($cart_items as $item) {
             <ul class="navbar-nav  me-auto mb-2 mb-lg-0 " style="margin-left: 110px;">
                 <li class="nav-item dropdown ps-3">
                     <button id="navbarDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                       aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
+                            aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
                         Ana sayfa
                     </button>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdown">
@@ -297,7 +269,7 @@ foreach ($cart_items as $item) {
                 </li>
                 <li class="nav-item dropdown ps-3">
                     <button id="navbarDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                       aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
+                            aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
                         Satıcı
                     </button>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdown">
@@ -310,7 +282,7 @@ foreach ($cart_items as $item) {
                 </li>
                 <li class="nav-item dropdown ps-3">
                     <button id="navbarDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                       aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
+                            aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
                         Blog
                     </button>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdown">
@@ -323,7 +295,7 @@ foreach ($cart_items as $item) {
                 </li>
                 <li class="nav-item dropdown ps-3">
                     <button id="navbarDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                       aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
+                            aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
                         Siparişlerim
                     </button>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdown">
@@ -334,7 +306,7 @@ foreach ($cart_items as $item) {
                 </li>
                 <li class="nav-item dropdown ps-3">
                     <button id="navbarDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                       aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
+                            aria-expanded="false" style="background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer;">
                         Hakkımızda
                     </button>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdown">
@@ -389,27 +361,23 @@ foreach ($cart_items as $item) {
                 </tr>
                 </thead>
                 <tbody>
-                <?php
-                foreach ($cart_items as $row):
-                    $urun_toplam = $row['Urun_Fiyati'] * $row['Miktar'];
-                    ?>
+                <?php foreach ($cart_items as $row): ?>
                     <tr>
                         <td><?= htmlspecialchars($row['Urun_Adi']) ?></td>
                         <td><?= htmlspecialchars($row['Urun_Fiyati']) ?> TL</td>
                         <td><?= htmlspecialchars($row['Boyut']) ?></td>
                         <td>
-                            <div class="quantity-controls">
-                                <button type="button" onclick="updateCartQuantity(<?= $row['Sepet_ID'] ?>, 'decrement')">-</button>
-                                <input type="number" name="quantity[<?= $row['Sepet_ID'] ?>]" id="quantity-<?= $row['Sepet_ID'] ?>"
-                                       value="<?= htmlspecialchars($row['Miktar']) ?>" min="1"
-                                       onchange="updateCartQuantity(<?= $row['Sepet_ID'] ?>, 'set_quantity', this.value)">
-                                <button type="button" onclick="updateCartQuantity(<?= $row['Sepet_ID'] ?>, 'increment')">+</button>
+
+                            <div class="quantity-controls d-flex align-items-center justify-content-center">
+                                <button type="button" class="btn btn-dark btn-sm" onclick="updateCartQuantity(<?= $row['Sepet_ID'] ?>, 'decrement')">-</button>
+                                <span class="mx-2" style="min-width: 20px; text-align: center;"><?= htmlspecialchars($row['Miktar']) ?></span>
+                                <button type="button" class="btn btn-dark btn-sm" onclick="updateCartQuantity(<?= $row['Sepet_ID'] ?>, 'increment')">+</button>
                             </div>
                         </td>
-                        <td><?= $urun_toplam ?> TL</td>
+                        <td><?= ($row['Urun_Fiyati'] * $row['Miktar']) ?> TL</td>
                         <td><?= htmlspecialchars($row['Eklenme_Tarihi']) ?></td>
                         <td class="action-buttons">
-                            <button type="button" class="delete-button"
+                            <button type="button" class="delete-button" 
                                     onclick="if(confirm('Bu ürünü sepetinizden silmek istediğinizden emin misiniz?')) { updateCartQuantity(<?= $row['Sepet_ID'] ?>, 'remove'); }">Sil</button>
                         </td>
                     </tr>
@@ -417,48 +385,52 @@ foreach ($cart_items as $item) {
                 <tr class="total-row">
                     <td colspan="4"><strong>Genel Toplam:</strong></td>
                     <td><strong><?= $genel_toplam ?> TL</strong></td>
-                    <td></td>
+                    <td colspan="2"></td>
                 </tr>
                 </tbody>
             </table>
             <div style="text-align: right; margin-top: 20px;">
-                <button type="submit" class="btn btn-success">Sepeti Onayla</button>
+                <a href="checkout.php" class="btn btn-success">Sepeti Onayla</a>
             </div>
         </form>
     <?php else: ?>
         <p>Sepetinizde ürün bulunmamaktadır.</p>
     <?php endif; ?>
 </div>
+
 <script>
-    // updateCartQuantity fonksiyonu, update_cart.php'ye POST isteği gönderir
-    function updateCartQuantity(sepetId, action, newQuantity = null) {
+    /**
+     * Sepet miktarını artırmak, azaltmak veya ürünü silmek için
+     * update_cart.php'ye POST isteği gönderir.
+     * @param {number} sepetId - Güncellenecek sepet öğesinin ID'si
+     * @param {string} action - Yapılacak eylem ('increment', 'decrement', 'remove')
+     */
+    function updateCartQuantity(sepetId, action) {
+        // Dinamik olarak bir form oluştur
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = 'update_cart.php'; // update_cart.php'ye yönlendir
+        form.action = 'update_cart.php'; // Hedef PHP scripti
+        form.style.display = 'none'; // Formu sayfada gösterme
 
+        // Sepet ID'sini form'a ekle
         const sepetIdInput = document.createElement('input');
         sepetIdInput.type = 'hidden';
-        sepetIdInput.name = 'sepet_id'; // update_cart.php'de sepet_id bekliyorsa
+        sepetIdInput.name = 'sepet_id';
         sepetIdInput.value = sepetId;
         form.appendChild(sepetIdInput);
 
+        // Eylem türünü form'a ekle
         const actionInput = document.createElement('input');
         actionInput.type = 'hidden';
         actionInput.name = 'action';
         actionInput.value = action;
         form.appendChild(actionInput);
 
-        if (action === 'set_quantity' && newQuantity !== null) {
-            const quantityInput = document.createElement('input');
-            quantityInput.type = 'hidden';
-            quantityInput.name = 'quantity';
-            quantityInput.value = newQuantity;
-            form.appendChild(quantityInput);
-        }
-
+        // Formu sayfaya ekle ve gönder
         document.body.appendChild(form);
         form.submit();
     }
 </script>
+
 </body>
 </html>
