@@ -174,6 +174,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
         <?php endif; ?>
 
+        <div class="back-button">
+        <a class="btn btn-secondary" href="../index.php">←</a>
+    </div> 
+
+
         <form action="login.php" method="post" id="loginForm">
             <input type="email" id="email" name="email" placeholder="E-posta" required>
             <input type="password" id="password" name="password" placeholder="Şifre" required>
@@ -182,6 +187,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <br>
         <a href="register.php">Kayıt Ol</a>
     </div>
+
+
+    <style>
+.back-button {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+}
+
+.back-button a {
+    font-size: 16px;
+    padding: 8px 14px;
+    text-decoration: none;
+    display: inline-block;
+}
+</style>
 
     <script>
         // E-posta alanına @gmail.com eklemek için (isteğe bağlı, sunucu tarafı validasyon daha önemlidir)
