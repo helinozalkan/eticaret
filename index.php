@@ -9,7 +9,7 @@ $username = $logged_in ? htmlspecialchars($_SESSION['username']) : null; // Kull
 // Aktif ürünleri veri tabanından çek
 $products = []; // Ürünleri tutacak dizi
 try {
-    $query = "SELECT Urun_ID, Urun_Adi, Urun_Fiyati, Stok_Adedi, Urun_Gorseli, Urun_Aciklamasi, Indirimli_Fiyat FROM Urun WHERE Aktiflik_Durumu = 1";
+    $query = "SELECT Urun_ID, Urun_Adi, Urun_Fiyati, Stok_Adedi, Urun_Gorseli, Urun_Aciklamasi  FROM Urun WHERE Aktiflik_Durumu = 1";
     $stmt = $conn->prepare($query);
     $stmt->execute();
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
