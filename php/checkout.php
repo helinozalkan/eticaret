@@ -33,9 +33,20 @@ $error_message = $_SESSION['checkout_error_message'] ?? $_SESSION['order_error_m
 unset($_SESSION['checkout_error_message']); // Mesajı gösterdikten sonra sil
 unset($_SESSION['order_error_message']);
 
+// Formdan gelen değerleri tutmak için varsayılan boş değerler
+$customer_name_default = '';
+$customer_phone_default = '';
+$customer_address_default = '';
+
 try {
     // 2. Müşteri ID'sini Al
-    $stmt_musteri = $conn->prepare("SELECT Musteri_ID, Ad_Soyad, Tel_No, Adres FROM musteri WHERE User_ID = " . PARAM_USER_ID_CO); // Kayıtlı adres ve telefon bilgilerini de alabiliriz
+    // YENİ KOD
+    $stmt_musteri = $conn->prepare(
+        "SELECT m.Musteri_ID, u.username, m.Tel_No, m.Adres 
+        FROM musteri m 
+        JOIN users u ON m.User_ID = u.id 
+        WHERE m.User_ID = " . PARAM_USER_ID_CO
+    );
     $stmt_musteri->bindParam(PARAM_USER_ID_CO, $user_id, PDO::PARAM_INT);
     $stmt_musteri->execute();
     $musteri_data = $stmt_musteri->fetch(PDO::FETCH_ASSOC);
@@ -45,14 +56,14 @@ try {
     }
     $musteri_id = $musteri_data['Musteri_ID'];
     // Formu önceden doldurmak için müşteri bilgilerini alalım
-    $customer_name_default = $musteri_data['Ad_Soyad'] ?? '';
+    $customer_name_default = $musteri_data['username'] ?? '';       
     $customer_phone_default = $musteri_data['Tel_No'] ?? '';
     $customer_address_default = $musteri_data['Adres'] ?? '';
 
 
     // 3. Sepetteki Ürünleri Çek ve Toplam Tutarı Hesapla
     $stmt_cart_items = $conn->prepare(
-        "SELECT s.Urun_ID, s.Miktar, s.Boyut, u.Urun_Adi, u.Urun_Fiyati, u.Stok_Adedi, u.Aktiflik_Durumu, u.Urun_Gorseli
+        "SELECT s.Urun_ID, s.Miktar, u.Urun_Adi, u.Urun_Fiyati, u.Stok_Adedi, u.Aktiflik_Durumu, u.Urun_Gorseli
          FROM Sepet s
          JOIN Urun u ON s.Urun_ID = u.Urun_ID
          WHERE s.Musteri_ID = " . PARAM_MUSTERI_ID_CO
@@ -77,32 +88,23 @@ try {
         $total_cart_amount += (float)$item['Urun_Fiyati'] * (int)$item['Miktar'];
     }
 
-    // CSRF token oluştur (her sayfa yüklemesinde veya form gönderilmediyse)
-    // if (empty($_POST) && (!isset($_SESSION['csrf_token_checkout']) || empty($_SESSION['csrf_token_checkout']))) {
-    //     if (function_exists('random_bytes')) {
-    //         $_SESSION['csrf_token_checkout'] = bin2hex(random_bytes(32));
-    //     } else {
-    //         $_SESSION['csrf_token_checkout'] = bin2hex(openssl_random_pseudo_bytes(32));
-    //     }
-    // }
-
 } catch (PDOException $e) {
     error_log("checkout.php PDOException: " . $e->getMessage());
     $error_message = "Sayfa yüklenirken bir veritabanı hatası oluştu. Lütfen daha sonra tekrar deneyin.";
 } catch (CheckoutException $e) {
     error_log("checkout.php CheckoutException: " . $e->getMessage());
-    $error_message = $e->getMessage(); // Özel hata mesajını göster
+    $error_message = $e->getMessage();
 } catch (Exception $e) {
     error_log("checkout.php Generic Exception: " . $e->getMessage());
     $error_message = "Beklenmedik bir hata oluştu. Lütfen daha sonra tekrar deneyin.";
 }
 
-// Formdan gelen değerleri tutmak için (hata durumunda formu tekrar doldurmak için)
-$shipping_name = htmlspecialchars($_POST['shipping_name'] ?? $customer_name_default ?? '');
-$shipping_address = htmlspecialchars($_POST['shipping_address'] ?? $customer_address_default ?? '');
+// Hata durumunda formu tekrar doldurmak için POST verilerini veya müşteri verilerini kullan
+$shipping_name = htmlspecialchars($_POST['shipping_name'] ?? $customer_name_default);
+$shipping_address = htmlspecialchars($_POST['shipping_address'] ?? $customer_address_default);
 $shipping_city = htmlspecialchars($_POST['shipping_city'] ?? '');
 $shipping_zip = htmlspecialchars($_POST['shipping_zip'] ?? '');
-$shipping_phone = htmlspecialchars($_POST['shipping_phone'] ?? $customer_phone_default ?? '');
+$shipping_phone = htmlspecialchars($_POST['shipping_phone'] ?? $customer_phone_default);
 
 $billing_same_as_shipping = isset($_POST['billing_same_as_shipping']);
 $billing_name = htmlspecialchars($_POST['billing_name'] ?? ($billing_same_as_shipping ? $shipping_name : ''));
@@ -117,106 +119,93 @@ $billing_phone = htmlspecialchars($_POST['billing_phone'] ?? ($billing_same_as_s
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sipariş Tamamlama - El Emek</title>
+    <title>Sipariş Tamamlama - E-Ticaret</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../css/css.css"> <!-- Genel CSS dosyanız -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/css.css">
     <style>
         body {
             background-color: #f8f9fa;
         }
-        .container.checkout-container {
-            margin-top: 30px;
-            margin-bottom: 30px;
-            background-color: #fff;
-            padding: 30px;
+        .checkout-container {
+            max-width: 1140px;
+        }
+        .form-section h4 {
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .order-summary-card {
+            background-color: #ffffff;
             border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            padding: 25px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 20px;
         }
-        .cart-summary img {
-            max-width: 60px;
-            height: auto;
-            border-radius: 4px;
+        .summary-product {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
         }
-        .form-section {
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #eee;
+        .summary-product-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-right: 15px;
         }
-        .form-section:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
+        .summary-product-info {
+            flex-grow: 1;
         }
-        .btn-place-order {
-            background-color: rgb(155, 10, 109);
-            border-color: rgb(155, 10, 109);
-            color: white;
-            padding: 10px 25px;
-            font-size: 1.1em;
+        .summary-product-info h6 {
+            margin-bottom: 2px;
+            font-weight: 600;
         }
-        .btn-place-order:hover {
-            background-color: rgb(125, 8, 89);
-            border-color: rgb(125, 8, 89);
+        .summary-product-info small {
+            color: #6c757d;
         }
-        .table th, .table td {
-            vertical-align: middle;
+        .summary-product-price {
+            font-weight: 600;
+            white-space: nowrap;
         }
-        .alert-checkout {
-            border-left: 5px solid #dc3545; /* Hata mesajları için */
+        .summary-totals div {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 1.05em;
+        }
+        .summary-totals .grand-total {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #000;
         }
     </style>
 </head>
 <body>
 
-    <?php // İsteğe bağlı: Navigasyon barınızı buraya include edebilirsiniz
-        // include_once 'partials/navbar.php';
-    ?>
-
-    <div class="container checkout-container">
-        <h1 class="text-center mb-4">Sipariş Tamamlama</h1>
+    <div class="container checkout-container my-5">
+        <div class="text-center mb-5">
+            <h1 class="display-5">Sipariş Tamamlama</h1>
+            <p class="lead text-muted">Lütfen siparişinizi tamamlamak için bilgilerinizi eksiksiz doldurun.</p>
+        </div>
 
         <?php if ($error_message): ?>
-            <div class="alert alert-danger alert-checkout" role="alert">
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i>
                 <?php echo htmlspecialchars($error_message); ?>
             </div>
         <?php endif; ?>
 
-        <div class="row">
-            <!-- Sol Taraf: Sipariş Özeti -->
-            <div class="col-lg-5 order-lg-2 mb-4">
-                <h4>Sipariş Özeti</h4>
-                <?php if (!empty($cart_items)): ?>
-                    <ul class="list-group mb-3">
-                        <?php foreach ($cart_items as $item): ?>
-                            <li class="list-group-item d-flex justify-content-between lh-sm">
-                                <div>
-                                    <h6 class="my-0"><?php echo htmlspecialchars($item['Urun_Adi']); ?></h6>
-                                    <small class="text-muted">Miktar: <?php echo (int)$item['Miktar']; ?>
-                                        <?php if($item['Boyut']): // Boyut varsa göster ?>
-                                            | Boyut: <?php echo htmlspecialchars($item['Boyut']); ?>
-                                        <?php endif; ?>
-                                    </small>
-                                </div>
-                                <span class="text-muted"><?php echo number_format((float)$item['Urun_Fiyati'] * (int)$item['Miktar'], 2, ',', '.'); ?> TL</span>
-                            </li>
-                        <?php endforeach; ?>
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>Toplam (TL)</span>
-                            <strong><?php echo number_format($total_cart_amount, 2, ',', '.'); ?> TL</strong>
-                        </li>
-                    </ul>
-                <?php else: ?>
-                    <p>Sepetinizde ürün bulunmamaktadır.</p>
-                    <a href="../index.php" class="btn btn-outline-primary">Alışverişe Devam Et</a>
-                <?php endif; ?>
-            </div>
-
-            <!-- Sağ Taraf: Adres ve Ödeme Bilgileri Formu -->
-            <div class="col-lg-7 order-lg-1">
-                <?php if (!empty($cart_items)): // Sepet boş değilse formu göster ?>
-                <form action="order.php" method="POST" id="checkoutForm" novalidate>
+        <div class="row g-5">
+            <div class="col-md-7 col-lg-8">
+                <?php if (!empty($cart_items) && !$error_message): ?>
+                <form action="order.php" method="POST" id="checkoutForm" class="needs-validation" novalidate>
+                    
                     <div class="form-section">
-                        <h4>Teslimat Adresi</h4>
+                        <h4><i class="bi bi-truck me-2"></i>Teslimat Bilgileri</h4>
                         <div class="row g-3">
                             <div class="col-12">
                                 <label for="shipping_name" class="form-label">Ad Soyad</label>
@@ -240,7 +229,7 @@ $billing_phone = htmlspecialchars($_POST['billing_phone'] ?? ($billing_same_as_s
                             </div>
                             <div class="col-12">
                                 <label for="shipping_phone" class="form-label">Telefon Numarası</label>
-                                <input type="tel" class="form-control" id="shipping_phone" name="shipping_phone" value="<?php echo $shipping_phone; ?>" placeholder="05xxxxxxxxx" required>
+                                <input type="tel" class="form-control" id="shipping_phone" name="shipping_phone" value="<?php echo $shipping_phone; ?>" placeholder="05xxxxxxxxx" required pattern="[0-9]{10,11}">
                                 <div class="invalid-feedback">Lütfen geçerli bir telefon numarası girin.</div>
                             </div>
                         </div>
@@ -253,58 +242,81 @@ $billing_phone = htmlspecialchars($_POST['billing_phone'] ?? ($billing_same_as_s
                         <label class="form-check-label" for="billing_same_as_shipping">Fatura adresim teslimat adresimle aynı</label>
                     </div>
 
-                    <hr class="my-4">
-
-                    <div class="form-section" id="billingAddressSection" style="<?php if ($billing_same_as_shipping) echo 'display: none;'; ?>">
-                        <h4>Fatura Adresi</h4>
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label for="billing_name" class="form-label">Ad Soyad (Fatura)</label>
-                                <input type="text" class="form-control" id="billing_name" name="billing_name" value="<?php echo $billing_name; ?>">
-                            </div>
-                            <div class="col-12">
-                                <label for="billing_address" class="form-label">Adres (Fatura)</label>
-                                <input type="text" class="form-control" id="billing_address" name="billing_address" placeholder="Mahalle, Cadde, Sokak, No, Daire" value="<?php echo $billing_address; ?>">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="billing_city" class="form-label">Şehir (Fatura)</label>
-                                <input type="text" class="form-control" id="billing_city" name="billing_city" value="<?php echo $billing_city; ?>">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="billing_zip" class="form-label">Posta Kodu (Fatura)</label>
-                                <input type="text" class="form-control" id="billing_zip" name="billing_zip" value="<?php echo $billing_zip; ?>">
-                            </div>
-                             <div class="col-12">
-                                <label for="billing_phone" class="form-label">Telefon Numarası (Fatura)</label>
-                                <input type="tel" class="form-control" id="billing_phone" name="billing_phone" value="<?php echo $billing_phone; ?>" placeholder="05xxxxxxxxx">
-                            </div>
+                    <div class="form-section mt-4" id="billingAddressSection" style="<?php if ($billing_same_as_shipping) echo 'display: none;'; ?>">
+                        <h4><i class="bi bi-receipt me-2"></i>Fatura Bilgileri</h4>
+                         <div class="row g-3">
+                            <div class="col-12"><input type="text" class="form-control" name="billing_name" placeholder="Ad Soyad" value="<?php echo $billing_name; ?>"></div>
+                            <div class="col-12"><input type="text" class="form-control" name="billing_address" placeholder="Adres" value="<?php echo $billing_address; ?>"></div>
+                            <div class="col-md-6"><input type="text" class="form-control" name="billing_city" placeholder="Şehir" value="<?php echo $billing_city; ?>"></div>
+                            <div class="col-md-6"><input type="text" class="form-control" name="billing_zip" placeholder="Posta Kodu" value="<?php echo $billing_zip; ?>"></div>
+                            <div class="col-12"><input type="tel" class="form-control" name="billing_phone" placeholder="Telefon" value="<?php echo $billing_phone; ?>"></div>
                         </div>
                     </div>
                     
                     <hr class="my-4">
 
                     <div class="form-section">
-                        <h4>Ödeme Yöntemi</h4>
-                        <p class="text-muted">Not: Şu anda sadece "Kapıda Ödeme" seçeneği mevcuttur. Diğer ödeme yöntemleri yakında eklenecektir.</p>
+                        <h4><i class="bi bi-credit-card-2-front me-2"></i>Ödeme Yöntemi</h4>
                         <div class="my-3">
                             <div class="form-check">
                                 <input id="cod" name="paymentMethod" type="radio" class="form-check-input" checked required value="kapida_odeme">
                                 <label class="form-check-label" for="cod">Kapıda Ödeme</label>
                             </div>
-                            <!-- Diğer ödeme yöntemleri buraya eklenebilir (örn: kredi kartı) -->
                         </div>
+                         <p class="text-muted small">Siparişiniz, kapıda ödeme seçeneği ile belirttiğiniz adrese gönderilecektir.</p>
                     </div>
 
-                    <button class="w-100 btn btn-lg btn-place-order" type="submit">Siparişi Ver</button>
+                    <button class="w-100 btn btn-primary btn-lg" type="submit">Siparişi Onayla ve Tamamla</button>
                 </form>
                 <?php endif; ?>
             </div>
+
+            <div class="col-md-5 col-lg-4">
+                <div class="order-summary-card">
+                    <h4 class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="text-primary">Siparişiniz</span>
+                        <span class="badge bg-primary rounded-pill"><?php echo count($cart_items); ?></span>
+                    </h4>
+                    <?php if (!empty($cart_items) && !$error_message): ?>
+                        <div class="mb-4">
+                            <?php foreach ($cart_items as $item): ?>
+                                <div class="summary-product">
+                                    <img src="../uploads/<?= htmlspecialchars($item['Urun_Gorseli']) ?>" alt="<?= htmlspecialchars($item['Urun_Adi']) ?>" class="summary-product-image">
+                                    <div class="summary-product-info">
+                                        <h6><?php echo htmlspecialchars($item['Urun_Adi']); ?></h6>
+                                        <small>Miktar: <?php echo (int)$item['Miktar']; ?></small>
+                                    </div>
+                                    <span class="summary-product-price"><?php echo number_format((float)$item['Urun_Fiyati'] * (int)$item['Miktar'], 2, ',', '.'); ?> TL</span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        
+                        <hr>
+
+                        <div class="summary-totals">
+                            <div>
+                                <span>Ara Toplam</span>
+                                <span><?php echo number_format($total_cart_amount, 2, ',', '.'); ?> TL</span>
+                            </div>
+                             <div>
+                                <span>Kargo</span>
+                                <span>ÜCRETSİZ</span>
+                            </div>
+                            <hr>
+                             <div class="grand-total">
+                                <span>Genel Toplam</span>
+                                <span><?php echo number_format($total_cart_amount, 2, ',', '.'); ?> TL</span>
+                            </div>
+                        </div>
+
+                    <?php elseif(!$error_message): ?>
+                        <p class="text-center text-muted">Sepetinizde ürün bulunmamaktadır.</p>
+                        <a href="../index.php" class="btn btn-outline-primary w-100">Alışverişe Başla</a>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
     </div>
-
-    <?php // İsteğe bağlı: Footer'ınızı buraya include edebilirsiniz
-        // include_once 'partials/footer.php';
-    ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -316,22 +328,21 @@ $billing_phone = htmlspecialchars($_POST['billing_phone'] ?? ($billing_same_as_s
         function toggleBillingAddress() {
             if (billingSameAsShippingCheckbox.checked) {
                 billingAddressSection.style.display = 'none';
-                billingFields.forEach(field => field.required = false); // Zorunluluğu kaldır
+                billingFields.forEach(field => field.required = false);
             } else {
                 billingAddressSection.style.display = 'block';
-                // İhtiyaç duyulan fatura alanlarını tekrar zorunlu yapabilirsiniz
-                // Örneğin: document.getElementById('billing_name').required = true;
+                // Gerekirse fatura alanlarını zorunlu yap
+                // document.querySelector('[name="billing_name"]').required = true;
             }
         }
         billingSameAsShippingCheckbox.addEventListener('change', toggleBillingAddress);
-        // Sayfa yüklendiğinde durumu kontrol et
         toggleBillingAddress();
 
 
         // Bootstrap'in varsayılan form validasyonunu etkinleştirme
         (function () {
           'use strict'
-          var forms = document.querySelectorAll('.needs-validation, #checkoutForm') // checkoutForm'u da ekledik
+          var forms = document.querySelectorAll('.needs-validation')
           Array.prototype.slice.call(forms)
             .forEach(function (form) {
               form.addEventListener('submit', function (event) {

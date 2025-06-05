@@ -69,8 +69,7 @@ if ($satici_id !== null) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Slab:wght@100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="../css/css.css"> <!-- Ana CSS dosyanızın yolu güncellendi -->
-    <style>
+    <link rel="stylesheet" href="../css/css.css"> <style>
         body {
             font-family: 'Montserrat', sans-serif;
             background-color: #f8f9fa; /* Bootstrap'in hafif gri arka planı */
@@ -252,7 +251,7 @@ if ($satici_id !== null) {
         for (let i = 0; i < products.length; i++) {
             const productNameElement = products[i].getElementsByClassName('product-name')[0];
             if (productNameElement) { // Elementin varlığını kontrol et
-                 const productName = productNameElement.innerText.toLowerCase();
+                const productName = productNameElement.innerText.toLowerCase();
                 if (productName.includes(input)) {
                     products[i].style.display = '';
                 } else {
