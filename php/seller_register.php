@@ -297,7 +297,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <input type="text" name="tckn_vkn" id="tckn_vkn" value="<?php ?>" placeholder="TC Kimlik veya Vergi Numaranız">
             -->
 
-            <button type="submit">Satıcı Olarak Kayıt Ol</button>
+            <form action="php/seller_register.php" method="post">
+  <!-- Form alanları buraya gelecek -->
+  <button type="submit">Satıcı Olarak Kayıt Ol</button>
+</form>
+
         </form>
         <a href="login.php" class="form-link">Zaten bir hesabınız var mı? Giriş Yapın</a>
         <a href="register.php" class="form-link">Müşteri olarak mı kayıt olmak istiyorsunuz?</a>

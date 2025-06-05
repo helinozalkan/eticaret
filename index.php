@@ -578,11 +578,18 @@ try {
   </div>
 </div>
 <div class="container-fluid text-white p-0 mt-5" style="width: 100%;">
-    <div class="row p-0 position-relative">
-      <img src="images/62.png" class="img-fluid w-100 position-absolute"
-        style="top: 0; left: 0; z-index: -1; height: 100%;">
-      <div class="container d-flex flex-column flex-lg-row text-white border-bottom border-white"
-        style="z-index: 2; background-color: transparent; padding: 20px; margin-top: 20px; width: 90%;">
+  <div class="row p-0 position-relative">
+    <!-- Arka plan resmi -->
+    <img src="images/62.png" class="img-fluid w-100 position-absolute"
+  style="top: 0; left: 0; z-index: -1; height: 100%; object-fit: cover; bottom: 0;">
+
+
+    <!-- İçerik bloğu -->
+    <div class="container-fluid text-white"
+      style="z-index: 2; background-color: rgba(0, 0, 0, 0.6); padding: 40px 5%; margin-top: 20px;">
+
+      <div class="row">
+        <!-- 1. Kolon -->
         <div class="col-lg-3 mb-4">
           <h4>Ürünler</h4>
           <p>Seramik ve Çini</p>
@@ -592,12 +599,16 @@ try {
           <p>Metal İşleri</p>
           <p>El Yapımı Sabun ve Kozmetik Ürünleri</p>
         </div>
+
+        <!-- 2. Kolon -->
         <div class="col-lg-3 mb-4">
           <h4>Bilgi</h4>
           <p>SSS</p>
           <p>Blog</p>
           <p>Destek</p>
         </div>
+
+        <!-- 3. Kolon -->
         <div class="col-lg-3 mb-4">
           <h4>Şirket</h4>
           <p>Hakkımızda</p>
@@ -605,44 +616,47 @@ try {
           <p>İletişim</p>
           <p>Başarı Hikayeleri</p>
         </div>
+
+        <!-- 4. Kolon: Abonelik Kutusu -->
         <div class="col-lg-3 mb-4">
-  <div class="container rounded-4 text-center p-4 shadow-sm"
-    style="background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.15)); backdrop-filter: blur(10px); height: 100%; max-width: 400px;">
-    
-    <img class="rounded-4 mb-3 shadow" src="images/atomcayi.jpg" alt="El Yapımı Kurabiye"
-      style="width: 100%; height: auto; object-fit: cover;">
+          <div class="rounded-4 text-center p-4 shadow-sm"
+            style="background: linear-gradient(135deg, rgba(212, 28, 28, 0.3), rgba(255,255,255,0.15)); backdrop-filter: blur(10px);">
+            
+            <img class="rounded-4 mb-3 shadow" src="images/atomcayi.jpg" alt="El Yapımı Kurabiye"
+              style="width: 100%; height: auto; object-fit: cover;">
+            
+            <p class="fw-semibold mb-3">Özel kampanyalardan ve indirimlerden haberdar olun!</p>
+            
+            <div class="d-flex justify-content-between align-items-center gap-2">
+              <input type="email" class="form-control rounded-3 border-0 shadow-sm"
+                placeholder="E-posta adresinizi girin"
+                style="height: 50px; padding-left: 15px; background-color: #fff;">
+              
+              <button class="btn btn-danger rounded-3 shadow-sm px-3 fw-semibold"
+                type="button" style="height: 50px;">
+                Abone Ol
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <p class="fw-semibold mb-3">Özel kampanyalardan ve indirimlerden haberdar olun!</p>
-    
-    <div class="d-flex justify-content-between align-items-center gap-2">
-      <input type="email" class="form-control rounded-3 border-0 shadow-sm"
-        placeholder="E-posta adresinizi girin"
-        style="height: 50px; padding-left: 15px; background-color: #fff;">
-      
-      <button class="btn btn-danger rounded-3 shadow-sm px-3 fw-semibold"
-        type="button" style="height: 50px;">
-        Abone Ol
-      </button>
-    </div>
-  </div>
-</div>
-
-
-        <div class="d-flex flex-column flex-lg-row align-items-center mb-3 mb-lg-0">
-  <p class="mb-0">Şartlar</p>
-  <p class="mb-0 ms-lg-4">Gizlilik</p>
-  <p class="mb-0 ms-lg-4">Çerezler</p>
-</div>
-
-        <div class="d-flex align-items-center">
-          <i class="icon bi bi-facebook mr-3"></i>
-          <i class="icon bi bi-linkedin mr-3"></i>
-          <i class="icon bi bi-instagram"></i>
+      <!-- Alt Satır: Gizlilik ve Sosyal Medya -->
+      <div class="d-flex flex-column flex-lg-row justify-content-between align-items-center border-top pt-3 mt-4">
+        <div class="d-flex gap-4">
+          <p class="mb-0">Şartlar</p>
+          <p class="mb-0">Gizlilik</p>
+          <p class="mb-0">Çerezler</p>
+        </div>
+        <div class="d-flex gap-3">
+          <i class="bi bi-facebook"></i>
+          <i class="bi bi-linkedin"></i>
+          <i class="bi bi-instagram"></i>
         </div>
       </div>
     </div>
   </div>
-
+</div>
 
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
   <script>
