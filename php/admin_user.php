@@ -95,6 +95,8 @@ if (isset($_SESSION['user_action_error'])) {
             <li class="nav-item ps-3"><a class="nav-link" href="admin_dashboard.php"><i class="bi bi-speedometer2 me-1"></i>Kontrol Paneli</a></li>
             <li class="nav-item ps-3"><a class="nav-link active" href="admin_user.php"><i class="bi bi-people-fill me-1"></i>Kullanıcı Yönetimi</a></li>
             <li class="nav-item ps-3"><a class="nav-link" href="seller_verification.php"><i class="bi bi-patch-check-fill me-1"></i>Satıcı Doğrulama</a></li>
+            <li class="nav-item ps-3"><a class="nav-link" href="admin_review_management.php"><i class="bi bi-chat-square-text-fill me-1"></i>Yorum Yönetimi</a></li>
+
             </ul>
             <div class="d-flex me-3 align-items-center">
                 <i class="bi bi-person-circle text-white fs-4 me-2"></i>

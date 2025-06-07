@@ -11,6 +11,7 @@ session_start();
 // Yeni Database sınıfımızı projemize dahil ediyoruz.
 include_once '../database.php';
 
+// **NOT: Factory ve Model sınıflarınızın yollarının doğru olduğunu varsayıyorum.**
 // Gerekli Factory ve Model sınıflarını dahil et
 include_once __DIR__ . '/models/AbstractProduct.php';
 include_once __DIR__ . '/models/GenericProduct.php';
@@ -176,7 +177,26 @@ try {
                     <?php else: ?>
                         <p class="text-muted">Bu ürün için henüz yorum yapılmamış.</p>
                     <?php endif; ?>
-                </div>
+
+                    <hr class="my-4">
+                    <div class="text-center">
+                        <?php if ($logged_in && $current_user_role === 'customer'): ?>
+                            
+                            <a href="customer_review.php?product_id=<?= $product->getId(); ?>" class="btn btn-primary">
+                                <i class="bi bi-pencil-square me-2"></i>Bu Ürüne Yorum Yap
+                            </a>
+
+                        <?php elseif ($logged_in): ?>
+
+                            <p class="text-muted small">Yorum yapabilmek için müşteri hesabınızla giriş yapmalısınız.</p>
+                            
+                        <?php else: ?>
+
+                            <p class="text-muted">Yorum yapmak için lütfen <a href="login.php?redirect=<?= urlencode('product_detail.php?id=' . $product->getId()) ?>">giriş yapın</a>.</p>
+
+                        <?php endif; ?>
+                    </div>
+                    </div>
             </div>
         </div>
     </div>
