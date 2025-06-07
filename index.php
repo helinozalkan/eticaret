@@ -1,8 +1,12 @@
 <?php
 session_start();
 
-// Yeni Database sınıfımızı projemize dahil ediyoruz.
+// Gerekli tüm dosyaları dahil et
 include_once 'database.php';
+include_once 'php/models/AbstractProduct.php';
+include_once 'php/models/GenericProduct.php';
+include_once 'php/models/CeramicProduct.php';
+include_once 'php/factories/ProductFactory.php';
 
 // Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
 $db = Database::getInstance();
@@ -13,16 +17,29 @@ $logged_in = isset($_SESSION['user_id']);
 $username = $logged_in ? htmlspecialchars($_SESSION['username']) : null;
 
 // Aktif ürünleri veri tabanından çek
-$products = []; // Ürünleri tutacak dizi
+$products = []; // Ürün nesnelerini tutacak dizi
+
 try {
-    // Buradan sonraki kodlar aynı kalıyor, çünkü $conn değişkeni doğru şekilde alındı.
-    $query = "SELECT Urun_ID, Urun_Adi, Urun_Fiyati, Stok_Adedi, Urun_Gorseli, Urun_Aciklamasi FROM Urun WHERE Aktiflik_Durumu = 1";
+    // Factory'nin doğru nesneyi üretebilmesi için kategori adını da çekiyoruz.
+    $query = "SELECT u.*, k.Kategori_Adi 
+              FROM Urun u
+              LEFT JOIN KategoriUrun ku ON u.Urun_ID = ku.Urun_ID
+              LEFT JOIN Kategoriler k ON ku.Kategori_ID = k.Kategori_ID
+              WHERE u.Aktiflik_Durumu = 1
+              GROUP BY u.Urun_ID"; // Her ürünün bir kez gelmesi için gruplama
+    
     $stmt = $conn->prepare($query);
     $stmt->execute();
-    $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $productsFromDb = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Veritabanından gelen her bir dizi için Factory kullanarak nesne oluştur
+    foreach ($productsFromDb as $productData) {
+        $products[] = ProductFactory::create($productData);
+    }
 } catch (PDOException $e) {
-    error_log("index.php: Ürünler çekilirken veritabanı hatası: " . $e->getMessage());
-    // Hata durumunda ürün listesi boş kalır, kullanıcıya bir mesaj gösterilebilir.
+    // Bir veritabanı hatası olursa, hatayı logla ve kullanıcıya bir şey gösterme
+    error_log("index.php - Veritabanı Hatası: " . $e->getMessage());
+    // $products dizisi boş kalacak ve "ürün bulunamadı" mesajı gösterilecek.
 }
 ?>
 
@@ -34,7 +51,7 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ana Sayfa</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-    xintegrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -77,24 +94,24 @@ try {
       <div class="collapse navbar-collapse mt-1 bg-custom" id="navbarSupportedContent">
         <ul class="navbar-nav  me-auto mb-2 mb-lg-0 " style="margin-left: 110px;">
           <li class="nav-item ps-3">
-  <a class="nav-link" href="php/girisimciler.php">Girişimcilerimiz</a>
-</li>
+            <a class="nav-link" href="php/girisimciler.php">Girişimcilerimiz</a>
+          </li>
 
-<li class="nav-item ps-3">
-  <a class="nav-link" href="php/customer_orders.php">Sipariş İşlemleri</a>
-</li>
+          <li class="nav-item ps-3">
+            <a class="nav-link" href="php/customer_orders.php">Sipariş İşlemleri</a>
+          </li>
 
-<li class="nav-item ps-3">
-  <a class="nav-link" href="php/seller_register.php">Satıcı Ol</a>
-</li>
+          <li class="nav-item ps-3">
+            <a class="nav-link" href="php/seller_register.php">Satıcı Ol</a>
+          </li>
 
-<li class="nav-item ps-3">
-  <a class="nav-link" href="php/eticaret-ekibi.php">Ekibimiz</a>
-</li>
+          <li class="nav-item ps-3">
+            <a class="nav-link" href="php/eticaret-ekibi.php">Ekibimiz</a>
+          </li>
 
-<li class="nav-item ps-3">
-  <a class="nav-link" href="php/motivation.php">Ekipten Mesaj Var!</a>
-</li>
+          <li class="nav-item ps-3">
+            <a class="nav-link" href="php/motivation.php">Ekipten Mesaj Var!</a>
+          </li>
 
 
         </ul>
@@ -108,21 +125,18 @@ try {
         </div>
 
         <div class="d-flex me-3" style="margin-left: 145px;">
-    <i class="bi bi-person-circle text-white fs-4"></i>
-    <?php if (isset($_SESSION['username'])): ?>
-        <a href="php/logout.php" class="text-white mt-2 ms-2" style="font-size: 15px; text-decoration: none;">
-            <?php echo htmlspecialchars($_SESSION['username']); ?> </a>
-    <?php else: ?>
-        <a href="php/login.php" class="text-white mt-2 ms-2" style="font-size: 15px; text-decoration: none;">
-            Giriş Yap
-        </a>
-    <?php endif; ?>
-</div>
-
-
+            <i class="bi bi-person-circle text-white fs-4"></i>
+            <?php if (isset($_SESSION['username'])): ?>
+                <a href="php/logout.php" class="text-white mt-2 ms-2" style="font-size: 15px; text-decoration: none;">
+                    <?php echo htmlspecialchars($_SESSION['username']); ?> 
+                </a>
+            <?php else: ?>
+                <a href="php/login.php" class="text-white mt-2 ms-2" style="font-size: 15px; text-decoration: none;">
+                    Giriş Yap
+                </a>
+            <?php endif; ?>
+        </div>
       </div>
-    </div>
-    </div>
     </div>
   </nav>
 
@@ -305,27 +319,25 @@ try {
                 <div class="a container bg-white h-100" style="border-radius: 5%;">
                   <div class="row mt-5 mb-5 align-items-center">
                     <div class="col-md-6 text-center">
-                      <!-- DÜZELTME: Ürün görseli bir <a> etiketi ile sarmalandı -->
-                      <a href="php/product_detail.php?id=<?= htmlspecialchars($urun['Urun_ID']) ?>">
-                        <img src="uploads/<?= htmlspecialchars($urun['Urun_Gorseli']) ?>" class="img-grow img-fluid"
-                          style="border-radius:5%; max-height: 230px; width: auto; object-fit: cover;" alt="<?= htmlspecialchars($urun['Urun_Adi']) ?>">
+                      <a href="php/product_detail.php?id=<?= htmlspecialchars($urun->getId()) ?>">
+                        <img src="uploads/<?= htmlspecialchars($urun->getImageUrl()) ?>" class="img-grow img-fluid"
+                          style="border-radius:5%; max-height: 230px; width: auto; object-fit: cover;" alt="<?= htmlspecialchars($urun->getName()) ?>">
                       </a>
                     </div>
                     <div class="col-md-6">
-                      <!-- DÜZELTME: Ürün adı da tıklanabilir hale getirildi -->
                       <h3 class="baslik3 fw-bold fs-5 mt-3 mt-md-0">
-                        <a href="php/product_detail.php?id=<?= htmlspecialchars($urun['Urun_ID']) ?>" class="text-dark text-decoration-none">
-                            <?= htmlspecialchars($urun['Urun_Adi']) ?>
+                        <a href="php/product_detail.php?id=<?= htmlspecialchars($urun->getId()) ?>" class="text-dark text-decoration-none">
+                            <?= htmlspecialchars($urun->getName()) ?>
                         </a>
                       </h3>
                       <div class="starts" style="color:rgb(91, 140, 213) ;">
                         <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
                       </div>
-                      <p style="font-size: 14px; margin-top: 10px;"><?= htmlspecialchars($urun['Urun_Aciklamasi']) ?></p>
-                      <div class="baslik3 fw-bold d-inline-block fs-4 mt-2"><?= htmlspecialchars($urun['Urun_Fiyati']) ?> TL</div>
+                      <p style="font-size: 14px; margin-top: 10px;"><?= htmlspecialchars($urun->getDescription()) ?></p>
+                      <div class="baslik3 fw-bold d-inline-block fs-4 mt-2"><?= htmlspecialchars($urun->getPrice()) ?> TL</div>
                       <div>
                         <form action="php/add_to_cart.php" method="POST" class="mt-2">
-                          <input type="hidden" name="urun_id" value="<?= $urun['Urun_ID'] ?>">
+                          <input type="hidden" name="urun_id" value="<?= $urun->getId() ?>">
                           <input type="hidden" name="boyut" value="1">
                           <input type="hidden" name="miktar" value="1">
                           <button type="submit" class="btn text-white" style="background-color:rgb(91, 140, 213); border-radius: 20px;">Sepete Ekle</button>
@@ -593,17 +605,14 @@ try {
 </div>
 <div class="container-fluid text-white p-0 mt-5" style="width: 100%;">
   <div class="row p-0 position-relative">
-    <!-- Arka plan resmi -->
     <img src="images/62.png" class="img-fluid w-100 position-absolute"
   style="top: 0; left: 0; z-index: -1; height: 100%; object-fit: cover; bottom: 0;">
 
 
-    <!-- İçerik bloğu -->
     <div class="container-fluid text-white"
       style="z-index: 2; background-color: rgba(0, 0, 0, 0.6); padding: 40px 5%; margin-top: 20px;">
 
       <div class="row">
-        <!-- 1. Kolon -->
         <div class="col-lg-3 mb-4">
           <h4>Ürünler</h4>
           <p>Seramik ve Çini</p>
@@ -614,7 +623,6 @@ try {
           <p>El Yapımı Sabun ve Kozmetik Ürünleri</p>
         </div>
 
-        <!-- 2. Kolon -->
         <div class="col-lg-3 mb-4">
           <h4>Bilgi</h4>
           <p>SSS</p>
@@ -622,7 +630,6 @@ try {
           <p>Destek</p>
         </div>
 
-        <!-- 3. Kolon -->
         <div class="col-lg-3 mb-4">
           <h4>Şirket</h4>
           <p>Hakkımızda</p>
@@ -631,7 +638,6 @@ try {
           <p>Başarı Hikayeleri</p>
         </div>
 
-        <!-- 4. Kolon: Abonelik Kutusu -->
         <div class="col-lg-3 mb-4">
           <div class="rounded-4 text-center p-4 shadow-sm"
             style="background: linear-gradient(135deg, rgba(212, 28, 28, 0.3), rgba(255,255,255,0.15)); backdrop-filter: blur(10px);">
@@ -655,7 +661,6 @@ try {
         </div>
       </div>
 
-      <!-- Alt Satır: Gizlilik ve Sosyal Medya -->
       <div class="d-flex flex-column flex-lg-row justify-content-between align-items-center border-top pt-3 mt-4">
         <div class="d-flex gap-4">
           <p class="mb-0">Şartlar</p>
@@ -791,10 +796,10 @@ try {
 
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
-    xintegrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+    integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
     crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-    xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
     crossorigin="anonymous"></script>
   <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
@@ -802,5 +807,3 @@ try {
 </body>
 
 </html>
-
-

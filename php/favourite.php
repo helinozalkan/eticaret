@@ -1,91 +1,81 @@
 <?php
-// favourite.php - Favorilerim Sayfası
+// favourite.php - Favorilerim Sayfası (Son Hali)
 
 ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 session_start();
 
-// Yeni Database sınıfımızı projemize dahil ediyoruz.
+// Gerekli tüm dosyaları dahil et
 include_once '../database.php';
+include_once __DIR__ . '/models/AbstractProduct.php';
+include_once __DIR__ . '/models/GenericProduct.php';
+include_once __DIR__ . '/models/CeramicProduct.php';
+include_once __DIR__ . '/models/DokumaProduct.php';
+include_once __DIR__ . '/factories/ProductFactory.php';
 
-// Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
 $db = Database::getInstance();
 $conn = $db->getConnection();
 
-// *** İYİLEŞTİRME: Tekrar eden metinler için sabit tanımlıyoruz. ***
 define('HTTP_HEADER_LOCATION', 'Location: ');
 $redirect_page = 'favourite.php';
 
-
-// Giriş yapmış kullanıcı bilgilerini al
 $logged_in = isset($_SESSION['user_id']);
 $current_user_id = $logged_in ? (int)$_SESSION['user_id'] : null;
-$username_session = $logged_in && isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : null;
-$current_user_role = $logged_in && isset($_SESSION['role']) ? $_SESSION['role'] : null;
 
-
-$favorite_products = []; // Favori ürünleri tutacak dizi
-$message = "";           // Mesajları tutacak değişken
-
-// Sadece giriş yapmış kullanıcılar favorilerini görebilir
 if (!$logged_in) {
     $_SESSION['error_message'] = "Favorilerinizi görmek için lütfen giriş yapın.";
-    header(HTTP_HEADER_LOCATION . "login.php?redirect=" . $redirect_page); // Giriş sonrası favorilere yönlendir
+    header(HTTP_HEADER_LOCATION . "login.php?redirect=" . urlencode($redirect_page));
     exit;
 }
 
-// Favorilerden ürün çıkarma işlemi (POST ile)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_from_favorites'])) {
-    if (isset($_POST['urun_id']) && $current_user_id) {
-        $urun_id_to_remove = (int)$_POST['urun_id'];
-        try {
-            // Buradan sonraki kodlar aynı kalıyor, çünkü $conn değişkeni doğru şekilde alındı.
-            $stmt_remove = $conn->prepare("DELETE FROM Favoriler WHERE Kullanici_ID = :kullanici_id AND Urun_ID = :urun_id");
-            $stmt_remove->bindParam(':kullanici_id', $current_user_id, PDO::PARAM_INT);
-            $stmt_remove->bindParam(':urun_id', $urun_id_to_remove, PDO::PARAM_INT);
-            if ($stmt_remove->execute()) {
-                $_SESSION['success_message'] = "Ürün favorilerden başarıyla çıkarıldı.";
-            } else {
-                $_SESSION['error_message'] = "Ürün favorilerden çıkarılırken bir hata oluştu.";
-            }
-            header(HTTP_HEADER_LOCATION . $redirect_page); // Sayfayı yenile
-            exit;
-        } catch (PDOException $e) {
-            error_log("favourite.php: Favori silme hatası: " . $e->getMessage());
-            $_SESSION['error_message'] = "Favori silinirken teknik bir sorun oluştu.";
-            header(HTTP_HEADER_LOCATION . $redirect_page);
-            exit;
-        }
-    }
-}
-
-
-// Kullanıcının favori ürünlerini çek
-if ($current_user_id) {
+    $urun_id_to_remove = (int)$_POST['urun_id'];
     try {
-        $sql_favorites = "SELECT u.Urun_ID, u.Urun_Adi, u.Urun_Fiyati, u.Urun_Gorseli
-                          FROM Favoriler f
-                          JOIN Urun u ON f.Urun_ID = u.Urun_ID
-                          WHERE f.Kullanici_ID = :kullanici_id AND u.Aktiflik_Durumu = 1
-                          ORDER BY f.Ekleme_Tarihi DESC";
-
-        $stmt_favorites = $conn->prepare($sql_favorites);
-        $stmt_favorites->bindParam(':kullanici_id', $current_user_id, PDO::PARAM_INT);
-        $stmt_favorites->execute();
-        $favorite_products = $stmt_favorites->fetchAll(PDO::FETCH_ASSOC);
-
-        if (empty($favorite_products) && !isset($_SESSION['success_message']) && !isset($_SESSION['error_message'])) {
-            $message = "Henüz favorilerinize eklediğiniz bir ürün bulunmuyor.";
+        $stmt_remove = $conn->prepare("DELETE FROM Favoriler WHERE Kullanici_ID = :kullanici_id AND Urun_ID = :urun_id");
+        $stmt_remove->bindParam(':kullanici_id', $current_user_id, PDO::PARAM_INT);
+        $stmt_remove->bindParam(':urun_id', $urun_id_to_remove, PDO::PARAM_INT);
+        if ($stmt_remove->execute()) {
+            $_SESSION['success_message'] = "Ürün favorilerden başarıyla çıkarıldı.";
+        } else {
+            $_SESSION['error_message'] = "Ürün favorilerden çıkarılırken bir hata oluştu.";
         }
-
     } catch (PDOException $e) {
-        error_log("favourite.php: Favori ürünleri çekme hatası: " . $e->getMessage());
-        $message = "Favori ürünleriniz yüklenirken teknik bir sorun oluştu.";
+        $_SESSION['error_message'] = "Favori silinirken teknik bir sorun oluştu.";
     }
+    header(HTTP_HEADER_LOCATION . $redirect_page);
+    exit;
 }
 
+$favorite_products = [];
+$message = "";
+
+try {
+    $sql_favorites = "SELECT u.*, k.Kategori_Adi
+                      FROM Favoriler f
+                      JOIN Urun u ON f.Urun_ID = u.Urun_ID
+                      LEFT JOIN KategoriUrun ku ON u.Urun_ID = ku.Urun_ID
+                      LEFT JOIN Kategoriler k ON ku.Kategori_ID = k.Kategori_ID
+                      WHERE f.Kullanici_ID = :kullanici_id AND u.Aktiflik_Durumu = 1
+                      GROUP BY u.Urun_ID
+                      ORDER BY f.Ekleme_Tarihi DESC";
+
+    $stmt_favorites = $conn->prepare($sql_favorites);
+    $stmt_favorites->bindParam(':kullanici_id', $current_user_id, PDO::PARAM_INT);
+    $stmt_favorites->execute();
+    $favoritesDataFromDb = $stmt_favorites->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($favoritesDataFromDb as $productData) {
+        $favorite_products[] = ProductFactory::create($productData);
+    }
+
+    if (empty($favorite_products) && !isset($_SESSION['success_message']) && !isset($_SESSION['error_message'])) {
+        $message = "Henüz favorilerinize eklediğiniz bir ürün bulunmuyor.";
+    }
+
+} catch (PDOException $e) {
+    $message = "Favori ürünleriniz yüklenirken teknik bir sorun oluştu.";
+}
 ?>
 <!DOCTYPE html>
 <html lang="tr">
@@ -96,23 +86,138 @@ if ($current_user_id) {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="../css/css.css">
-  <!-- Diğer link ve stil etiketleri aynı kalıyor -->
-  <style>
-    body { font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
-    .custom-container { width: 90%; max-width: 1200px; margin: 30px auto; background-color: #fff; padding: 30px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); border-radius: 8px; }
-    .page-title { text-align: center; font-family: 'Playfair Display', serif; font-size: 2.5rem; margin-bottom: 30px; color: #333; border-bottom: 2px solid #0d6efd; padding-bottom: 10px; display: inline-block; }
-    .page-title-container { text-align: center; margin-bottom: 30px; }
-    .favorites { display: flex; flex-wrap: wrap; gap: 25px; justify-content: center; }
-    .favorite-item { background-color: #fff; padding: 20px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); width: calc(50% - 12.5px); box-sizing: border-box; display: flex; align-items: center; border-radius: 8px; transition: transform 0.2s ease-out, box-shadow 0.2s ease-out; }
-    .favorite-item:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); }
-    .favorite-image { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; }
-    .favorite-info { flex-grow: 1; display: flex; flex-direction: column; }
-    .remove-button { padding: 8px 15px; background-color: #dc3545; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; transition: background-color 0.2s ease; align-self: flex-start; }
-    .remove-button:hover { background-color: #c82333; }
-    @media (max-width: 768px) { .favorite-item { width: 100%; flex-direction: column; align-items: flex-start; } .favorite-image-link { margin-bottom: 15px; } }
-  </style>
+<style>
+    body { 
+        background-color: #f8f9fa; /* Sayfa arkaplanını hafif gri yapalım */
+        font-family: 'Montserrat', sans-serif; 
+    }
+    .custom-container { 
+        max-width: 960px; 
+        margin: 40px auto; 
+    }
+    .page-title-container {
+        margin-top: 40px; /* Başlığın üstündeki boşluk */
+        margin-bottom: 40px; /* Başlığın altındaki boşluk */
+    }
+    .page-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+    }
+
+    /* Favori Ürün Kartı Stilleri */
+    .favorite-item {
+        display: flex;
+        align-items: center;
+        gap: 20px; /* Elemanlar arası boşluk */
+        padding: 20px;
+        background-color: #ffffff;
+        border: 1px solid #dee2e6; /* İnce bir çerçeve */
+        border-radius: 12px; /* Daha yuvarlak köşeler */
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        transition: all 0.3s ease; /* Yumuşak geçiş efekti */
+        margin-bottom: 20px;
+    }
+    .favorite-item:hover {
+        transform: translateY(-5px); /* Hafif yukarı kalkma efekti */
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1); /* Daha belirgin gölge */
+        border-color: #0d6efd; /* Mavi çerçeve */
+    }
+    .favorite-image {
+        width: 120px; /* Resim boyutunu biraz büyütelim */
+        height: 120px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    .favorite-info {
+        flex-grow: 1; /* Ortadaki alanın tüm boşluğu kaplamasını sağlar */
+    }
+    .favorite-info h5 {
+        margin-bottom: 0.25rem;
+        font-weight: 600;
+    }
+    .favorite-info a {
+        text-decoration: none;
+        color: #212529;
+    }
+    .favorite-info a:hover {
+        color: #0d6efd;
+    }
+    .favorite-store {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+    .favorite-price {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #B12704;
+    }
+
+    /* Buton Grubu Stilleri */
+    .actions-group {
+        display: flex;
+        gap: 10px; /* Butonlar arası boşluk */
+        align-items: center;
+    }
+</style>
 </head>
 <body>
-  <!-- Sayfanın HTML içeriği (navbar, favori ürünler listesi vb.) aynı kalıyor -->
+    <?php include_once __DIR__ . '/includes/navbar.php'; ?>
+
+    <div class="container custom-container" style="max-width: 960px;">
+        <div class="page-title-container text-center mb-4">
+            <h1 class="page-title"><i class="bi bi-heart-fill me-2"></i>Favorilerim</h1>
+        </div>
+        
+        <?php if(isset($_SESSION['success_message'])): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert"><?= $_SESSION['success_message'] ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+            <?php unset($_SESSION['success_message']); ?>
+        <?php endif; ?>
+        <?php if(isset($_SESSION['error_message'])): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert"><?= $_SESSION['error_message'] ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+            <?php unset($_SESSION['error_message']); ?>
+        <?php endif; ?>
+         <?php if(isset($_SESSION['info_message'])): ?>
+            <div class="alert alert-info alert-dismissible fade show" role="alert"><?= $_SESSION['info_message'] ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+            <?php unset($_SESSION['info_message']); ?>
+        <?php endif; ?>
+
+        <div class="favorites-container">
+            <?php if (!empty($favorite_products)): ?>
+                <?php foreach ($favorite_products as $product): ?>
+                    <div class="d-flex align-items-center p-3 mb-3 bg-white rounded shadow-sm">
+                        <a href="product_detail.php?id=<?= $product->getId() ?>">
+                            <img src="../uploads/<?= htmlspecialchars($product->getImageUrl()) ?>" alt="<?= htmlspecialchars($product->getName()) ?>" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;">
+                        </a>
+                        <div class="flex-grow-1 ms-3">
+                            <h5><a href="product_detail.php?id=<?= $product->getId() ?>" class="text-decoration-none text-dark"><?= htmlspecialchars($product->getName()) ?></a></h5>
+                            <p class="mb-0 text-danger fw-bold fs-5"><?= number_format($product->getPrice(), 2, ',', '.') ?> TL</p>
+                        </div>
+                        <div class="d-flex flex-column gap-2">
+                             <form action="add_to_cart.php" method="POST" class="d-inline">
+                                <input type="hidden" name="urun_id" value="<?= $product->getId() ?>">
+                                <input type="hidden" name="miktar" value="1">
+                                <input type="hidden" name="boyut" value="1">
+                                <button type="submit" class="btn btn-sm btn-success w-100"><i class="bi bi-cart-plus-fill"></i> Sepete Ekle</button>
+                            </form>
+                            <form action="favourite.php" method="POST" class="d-inline">
+                                <input type="hidden" name="urun_id" value="<?= $product->getId() ?>">
+                                <button type="submit" name="remove_from_favorites" class="btn btn-sm btn-outline-danger w-100"><i class="bi bi-trash3-fill"></i> Kaldır</button>
+                            </form>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="alert alert-secondary text-center">
+                    <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                    <?= htmlspecialchars($message) ?>
+                </div>
+            <?php endif; ?>
+        </div>
+        <div class="text-center mt-4">
+            <a href="../index.php" class="btn btn-primary">Alışverişe Devam Et</a>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

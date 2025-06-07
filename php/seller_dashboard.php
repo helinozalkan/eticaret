@@ -1,15 +1,19 @@
 <?php
-// seller_dashboard.php - Satıcı panel sayfası
+// seller_dashboard.php - Satıcı panel sayfası (Factory Pattern ile güncellendi)
 
 session_start();
 
-// Yeni Database sınıfımızı projemize dahil ediyoruz.
+// Gerekli tüm dosyaları dahil et
 include_once '../database.php';
+include_once __DIR__ . '/models/AbstractProduct.php';
+include_once __DIR__ . '/models/GenericProduct.php';
+include_once __DIR__ . '/models/CeramicProduct.php';
+include_once __DIR__ . '/models/DokumaProduct.php';
+include_once __DIR__ . '/factories/ProductFactory.php';
 
 // Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
 $db = Database::getInstance();
 $conn = $db->getConnection();
-
 
 // Giriş yapmış kullanıcı bilgilerini kontrol et
 $logged_in = isset($_SESSION['user_id']);
@@ -22,14 +26,13 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'seller') {
 }
 
 $user_id = $_SESSION['user_id'];
-
-// Satıcının Satici_ID ve mağaza adı, ad soyadını çekmek için sorgu
 $store_name = "Mağaza Adı Bulunamadı";
 $seller_name = "Satıcı Adı Bulunamadı";
 $satici_id = null;
+$products = []; // Ürün nesnelerini tutacak dizi
 
 try {
-    // Buradan sonraki kodlar aynı kalıyor, çünkü $conn değişkeni doğru şekilde alındı.
+    // Satıcı bilgilerini çek
     $seller_info_query = "SELECT Satici_ID, Magaza_Adi, Ad_Soyad FROM satici WHERE User_ID = :user_id";
     $stmt_seller_info = $conn->prepare($seller_info_query);
     $stmt_seller_info->bindParam(':user_id', $user_id, PDO::PARAM_INT);
@@ -47,21 +50,31 @@ try {
     error_log("seller_dashboard.php: Satıcı bilgisi çekilirken veritabanı hatası: " . $e->getMessage());
 }
 
-// Satıcının ürünlerini çekmek için sorgu
-$product_result = null;
+// Satıcının ürünlerini çekmek ve nesnelere dönüştürmek
 if ($satici_id !== null) {
     try {
-        $product_query = "SELECT Urun_ID, Urun_Adi, Urun_Fiyati, Urun_Gorseli FROM Urun WHERE Satici_ID = :satici_id AND Aktiflik_Durumu = 1";
+        // Kategori adını da alacak şekilde sorguyu güncelle
+        $product_query = "SELECT u.*, k.Kategori_Adi 
+                          FROM Urun u
+                          LEFT JOIN KategoriUrun ku ON u.Urun_ID = ku.Urun_ID
+                          LEFT JOIN Kategoriler k ON ku.Kategori_ID = k.Kategori_ID
+                          WHERE u.Satici_ID = :satici_id AND u.Aktiflik_Durumu = 1
+                          GROUP BY u.Urun_ID";
+
         $stmt_product = $conn->prepare($product_query);
         $stmt_product->bindParam(':satici_id', $satici_id, PDO::PARAM_INT);
         $stmt_product->execute();
-        $product_result = $stmt_product->fetchAll(PDO::FETCH_ASSOC);
+        $productsFromDb = $stmt_product->fetchAll(PDO::FETCH_ASSOC);
+
+        // Gelen veriyi Product nesnelerine dönüştür
+        foreach ($productsFromDb as $productData) {
+            $products[] = ProductFactory::create($productData);
+        }
+
     } catch (PDOException $e) {
         error_log("seller_dashboard.php: Ürünler çekilirken veritabanı hatası: " . $e->getMessage());
-        $product_result = [];
+        $products = []; // Hata durumunda dizi boş kalır
     }
-} else {
-    $product_result = [];
 }
 ?>
 
@@ -77,7 +90,6 @@ if ($satici_id !== null) {
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Slab:wght@100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="../css/css.css">
-    <!-- Stil kodları değişmediği için aynı kalıyor -->
     <style>
         body {
             font-family: 'Montserrat', sans-serif;
@@ -229,14 +241,14 @@ if ($satici_id !== null) {
 
     <h2 class="mb-4 text-center" style="font-family: 'Playfair Display', serif; color: #333;">Mağaza Ürünleri</h2>
     <div class="products-grid">
-        <?php if ($product_result && count($product_result) > 0): ?>
-            <?php foreach ($product_result as $product): ?>
+        <?php if (!empty($products)): ?>
+            <?php foreach ($products as $product): ?>
                 <div class="product-card">
-                    <a href="product_detail.php?id=<?php echo htmlspecialchars($product['Urun_ID']); ?>" style="text-decoration:none;">
-                        <img src="../uploads/<?php echo htmlspecialchars($product['Urun_Gorseli'] ?: 'placeholder.jpg'); ?>" alt="<?php echo htmlspecialchars($product['Urun_Adi']); ?>" class="product-image">
+                    <a href="edit_product.php?id=<?= htmlspecialchars($product->getId()); ?>" style="text-decoration:none;">
+                        <img src="../uploads/<?= htmlspecialchars($product->getImageUrl() ?: 'placeholder.jpg'); ?>" alt="<?= htmlspecialchars($product->getName()); ?>" class="product-image">
                         <div class="product-card-body">
-                            <p class="product-name"><?php echo htmlspecialchars($product['Urun_Adi']); ?></p>
-                            <p class="product-price">₺<?php echo number_format(htmlspecialchars($product['Urun_Fiyati']), 2, ',', '.'); ?></p>
+                            <p class="product-name"><?= htmlspecialchars($product->getName()); ?></p>
+                            <p class="product-price">₺<?= number_format($product->getPrice(), 2, ',', '.'); ?></p>
                         </div>
                     </a>
                 </div>
@@ -254,7 +266,7 @@ if ($satici_id !== null) {
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // JavaScript kısmı değişmediği için aynı kalıyor
+    // JavaScript arama fonksiyonu, HTML yapısı korunduğu için değişmeden çalışır.
     function searchProducts() {
         const input = document.getElementById('search-input').value.toLowerCase();
         const products = document.getElementsByClassName('product-card');

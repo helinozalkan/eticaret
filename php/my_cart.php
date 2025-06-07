@@ -1,33 +1,34 @@
 <?php
-// my_cart.php - Sepetim Sayfası (Veritabanı tabanlı)
+// my_cart.php - Sepetim Sayfası (Factory Pattern ile güncellendi)
 
-session_start(); // Oturumu başlat
+session_start();
 
-// Yeni Database sınıfımızı projemize dahil ediyoruz.
+// Gerekli tüm dosyaları dahil et
 include_once '../database.php';
+include_once __DIR__ . '/models/AbstractProduct.php';
+include_once __DIR__ . '/models/GenericProduct.php';
+include_once __DIR__ . '/models/CeramicProduct.php';
+include_once __DIR__ . '/models/DokumaProduct.php';
+include_once __DIR__ . '/factories/ProductFactory.php';
 
 // Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
 $db = Database::getInstance();
 $conn = $db->getConnection();
 
-// *** İYİLEŞTİRME: Tekrar eden metinler için sabit ve değişkenler tanımlıyoruz. ***
 define('HTTP_HEADER_LOCATION', 'Location: ');
 $login_page = 'login.php';
-$cart_page = 'my_cart.php';
 
-
-// Özel istisna sınıfı tanımla
 class CartDisplayException extends Exception {}
 
-// Kullanıcının oturum açıp açmadığını kontrol et
 if (!isset($_SESSION['user_id'])) {
     header(HTTP_HEADER_LOCATION . $login_page . "?status=not_logged_in");
     exit();
 }
 
-$user_id = $_SESSION['user_id']; // Oturumdan users.id'yi al
-$musteri_id = null; // Müşteri ID'sini tutacak değişken
-$cart_items = []; // Sepet ürünlerini tutacak dizi
+$user_id = $_SESSION['user_id'];
+$musteri_id = null;
+$cart_items = []; // Sepet ürünlerini (nesne olarak) tutacak dizi
+$genel_toplam = 0; // Toplam tutarı tutacak değişken
 
 try {
     // Kullanıcının Musteri_ID'sini almak için sorgu
@@ -39,32 +40,44 @@ try {
     if ($musteri_data) {
         $musteri_id = $musteri_data['Musteri_ID'];
     } else {
-        error_log("my_cart.php: Musteri kaydı bulunamadı User_ID: " . $user_id);
+        throw new CartDisplayException("Müşteri kaydı bulunamadı.");
     }
 
-    // Doğru müşteri ID'sini kullanarak sepet verilerini çek
     if ($musteri_id !== null) {
-        $query_cart = "SELECT Sepet.Sepet_ID, Sepet.Boyut, Sepet.Miktar, Urun.Urun_ID, Urun.Urun_Adi, Urun.Urun_Fiyati, Urun.Urun_Gorseli
-                         FROM Sepet
-                         JOIN Urun ON Sepet.Urun_ID = Urun.Urun_ID
-                         WHERE Sepet.Musteri_ID = :musteri_id";
+        // YENİ: Sorguya kategori adını da dahil ediyoruz.
+        $query_cart = "SELECT s.Sepet_ID, s.Boyut, s.Miktar, 
+                              u.Urun_ID, u.Urun_Adi, u.Urun_Fiyati, u.Urun_Gorseli, u.Urun_Aciklamasi, u.Stok_Adedi,
+                              k.Kategori_Adi
+                       FROM Sepet s
+                       JOIN Urun u ON s.Urun_ID = u.Urun_ID
+                       LEFT JOIN KategoriUrun ku ON u.Urun_ID = ku.Urun_ID
+                       LEFT JOIN Kategoriler k ON ku.Kategori_ID = k.Kategori_ID
+                       WHERE s.Musteri_ID = :musteri_id
+                       GROUP BY s.Sepet_ID";
+                       
         $stmt_cart = $conn->prepare($query_cart);
         $stmt_cart->bindParam(':musteri_id', $musteri_id, PDO::PARAM_INT);
         $stmt_cart->execute();
-        $cart_items = $stmt_cart->fetchAll(PDO::FETCH_ASSOC);
+        $cartDataFromDb = $stmt_cart->fetchAll(PDO::FETCH_ASSOC);
+
+        // YENİ: Veritabanından gelen diziyi nesnelere dönüştürüyoruz.
+        foreach ($cartDataFromDb as $itemData) {
+            // Sepet bilgilerini (miktar, boyut) korurken, ürün bilgisini nesne olarak ekliyoruz.
+            $itemData['product_object'] = ProductFactory::create($itemData);
+            $cart_items[] = $itemData; // Geliştirilmiş diziyi ana listeye ekle
+        }
     }
 
-} catch (CartDisplayException | PDOException $e) {
-    if (isset($conn) && $conn->inTransaction()) $conn->rollBack();
+} catch (Exception $e) {
     error_log("my_cart.php Hatası: " . $e->getMessage());
-    $cart_items = [];
+    $cart_items = []; // Hata durumunda sepeti boşalt
     $_SESSION['cart_error'] = "Sepetiniz yüklenirken bir sorun oluştu.";
 }
 
-// Toplam tutarı hesapla
-$genel_toplam = 0;
+// Toplam tutarı hesapla (nesne kullanarak)
 foreach ($cart_items as $item) {
-    $genel_toplam += $item['Urun_Fiyati'] * $item['Miktar'];
+    // YENİ: Fiyatı dizi yerine nesneden alıyoruz.
+    $genel_toplam += $item['product_object']->getPrice() * $item['Miktar'];
 }
 ?>
 
@@ -90,8 +103,7 @@ foreach ($cart_items as $item) {
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-dark" style="background-color:rgb(91, 140, 213);">
-    <!-- Navbar HTML kısmı aynı kalıyor -->
-</nav>
+    </nav>
 
 <div class="container cart-container">
     <div class="text-center mb-4">
@@ -114,15 +126,15 @@ foreach ($cart_items as $item) {
                 <?php foreach ($cart_items as $row): ?>
                     <tr>
                         <td style="width: 80px;">
-                            <a href="product_detail.php?id=<?= $row['Urun_ID'] ?>">
-                                <img src="../uploads/<?= htmlspecialchars($row['Urun_Gorseli']) ?>" alt="<?= htmlspecialchars($row['Urun_Adi']) ?>" class="product-image">
+                            <a href="product_detail.php?id=<?= $row['product_object']->getId() ?>">
+                                <img src="../uploads/<?= htmlspecialchars($row['product_object']->getImageUrl()) ?>" alt="<?= htmlspecialchars($row['product_object']->getName()) ?>" class="product-image">
                             </a>
                         </td>
                         <td>
-                            <a href="product_detail.php?id=<?= $row['Urun_ID'] ?>" class="text-dark text-decoration-none fw-bold"><?= htmlspecialchars($row['Urun_Adi']) ?></a>
+                            <a href="product_detail.php?id=<?= $row['product_object']->getId() ?>" class="text-dark text-decoration-none fw-bold"><?= htmlspecialchars($row['product_object']->getName()) ?></a>
                             <small class="d-block text-muted">Boyut: <?= htmlspecialchars($row['Boyut']) ?></small>
                         </td>
-                        <td class="text-center"><?= number_format($row['Urun_Fiyati'], 2, ',', '.') ?> TL</td>
+                        <td class="text-center"><?= number_format($row['product_object']->getPrice(), 2, ',', '.') ?> TL</td>
                         <td class="text-center">
                             <div class="input-group justify-content-center" style="width: 120px;">
                                 <button class="btn btn-outline-secondary btn-sm btn-update-quantity" type="button" onclick="updateCart('decrement', <?= $row['Sepet_ID'] ?>)">-</button>
@@ -130,7 +142,7 @@ foreach ($cart_items as $item) {
                                 <button class="btn btn-outline-secondary btn-sm btn-update-quantity" type="button" onclick="updateCart('increment', <?= $row['Sepet_ID'] ?>)">+</button>
                             </div>
                         </td>
-                        <td class="text-end fw-bold"><?= number_format($row['Urun_Fiyati'] * $row['Miktar'], 2, ',', '.') ?> TL</td>
+                        <td class="text-end fw-bold"><?= number_format($row['product_object']->getPrice() * $row['Miktar'], 2, ',', '.') ?> TL</td>
                         <td class="text-center">
                             <button type="button" class="btn btn-sm btn-outline-danger" title="Ürünü Kaldır" onclick="updateCart('remove', <?= $row['Sepet_ID'] ?>)"><i class="bi bi-trash3-fill"></i></button>
                         </td>
@@ -145,7 +157,6 @@ foreach ($cart_items as $item) {
                 </tfoot>
             </table>
         </div>
-        <!-- *** DÜZELTME: Butonlar eklendi *** -->
         <div class="d-flex justify-content-between align-items-center mt-4">
             <a href="../index.php" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Alışverişe Devam Et

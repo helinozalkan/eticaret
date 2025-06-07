@@ -11,7 +11,14 @@ session_start();
 // Yeni Database sınıfımızı projemize dahil ediyoruz.
 include_once '../database.php';
 
-// **DÜZELTME: Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.**
+// Gerekli Factory ve Model sınıflarını dahil et
+include_once __DIR__ . '/models/AbstractProduct.php';
+include_once __DIR__ . '/models/GenericProduct.php';
+include_once __DIR__ . '/models/CeramicProduct.php';
+include_once __DIR__ . '/models/DokumaProduct.php';
+include_once __DIR__ . '/factories/ProductFactory.php';
+
+// Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
 $db = Database::getInstance();
 $conn = $db->getConnection();
 
@@ -25,7 +32,7 @@ $username_session = $logged_in && isset($_SESSION['username']) ? htmlspecialchar
 
 // Favorilere Ekleme İşlemi
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_favorites_action'])) {
-    // ... (Bu blok aynı kalıyor) ...
+    // ... (Favori ekleme bloğu değişmeden kalabilir) ...
 }
 
 $product = null;
@@ -40,20 +47,33 @@ try {
     }
     $product_id_from_url = (int)$_GET['id'];
 
-    $sql_query_product = "SELECT u.*, s.Magaza_Adi, s.User_ID AS Satici_User_ID
+    // Factory'nin ihtiyacı olan tüm bilgileri (kategori adı ve mağaza adı dahil) çekiyoruz.
+    $sql_query_product = "SELECT u.*, s.Magaza_Adi, s.User_ID AS Satici_User_ID, k.Kategori_Adi
                           FROM Urun u
                           LEFT JOIN Satici s ON u.Satici_ID = s.Satici_ID
+                          LEFT JOIN KategoriUrun ku ON u.Urun_ID = ku.Urun_ID
+                          LEFT JOIN Kategoriler k ON ku.Kategori_ID = k.Kategori_ID
                           WHERE u.Urun_ID = :product_id AND u.Aktiflik_Durumu = 1";
+                          
     $statement_product = $conn->prepare($sql_query_product);
     $statement_product->bindParam(':product_id', $product_id_from_url, PDO::PARAM_INT);
     $statement_product->execute();
-    $product = $statement_product->fetch(PDO::FETCH_ASSOC);
+    
+    // Veritabanından gelen ham veriyi bir diziye alıyoruz.
+    $productData = $statement_product->fetch(PDO::FETCH_ASSOC);
+
+    if ($productData) {
+        // Ham veriyi kullanarak Factory'den uygun nesneyi istiyoruz.
+        $product = ProductFactory::create($productData);
+    } else {
+        $product = null;
+    }
 
     if (!$product) {
         throw new ProductDetailException("Ürün bulunamadı veya şu anda aktif değil.");
     }
 
-    // Yorumları çekme sorgusu
+    // Yorumları çekme sorgusu (Bu kısım değişmedi)
     $sql_query_reviews = "SELECT r.*, usr.username AS Kullanici_Adi
                           FROM Yorumlar r
                           JOIN users usr ON r.Kullanici_ID = usr.id
@@ -75,7 +95,7 @@ try {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?php echo $product ? htmlspecialchars($product['Urun_Adi']) : 'Ürün Detayı'; ?> - ETİCARET</title>
+  <title><?php echo $product ? htmlspecialchars($product->getName()) : 'Ürün Detayı'; ?> - ETİCARET</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="../css/css.css">
@@ -92,8 +112,8 @@ try {
   </style>
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-dark" style="background-color:rgb(91, 140, 213);">
-    </nav>
+  
+  <?php include_once __DIR__ . '/includes/navbar.php'; ?>
 
   <div class="container my-5">
     <?php if ($product): ?>
@@ -101,24 +121,25 @@ try {
         <div class="card-body p-lg-5 p-md-4 p-3">
             <div class="row gx-lg-5">
                 <div class="col-lg-6 mb-4 mb-lg-0 product-gallery">
-                    <img src="../uploads/<?= htmlspecialchars($product['Urun_Gorseli'] ?? 'placeholder.jpg'); ?>" alt="<?= htmlspecialchars($product['Urun_Adi']); ?>" class="img-fluid main-image mb-3">
+                    <img src="../uploads/<?= htmlspecialchars($product->getImageUrl() ?? 'placeholder.jpg'); ?>" alt="<?= htmlspecialchars($product->getName()); ?>" class="img-fluid main-image mb-3">
                 </div>
                 <div class="col-lg-6 product-details">
-                    <h1 class="product-title mb-3"><?= htmlspecialchars($product['Urun_Adi']); ?></h1>
-                    <p class="text-muted">Mağaza: <a href="#"><?= htmlspecialchars($product['Magaza_Adi'] ?? 'Belirtilmemiş'); ?></a></p>
-                    <div class="product-price my-3"><?= number_format($product['Urun_Fiyati'], 2, ',', '.'); ?> TL</div>
-                    <p class="lead fs-6 mb-4"><?= htmlspecialchars($product['Urun_Aciklamasi']); ?></p>
+                    <h1 class="product-title mb-3"><?= htmlspecialchars($product->getName()); ?></h1>
+                    <p class="text-muted">Mağaza: <a href="#"><?= htmlspecialchars($product->getStoreName()); ?></a></p>
+                    <div class="product-price my-3"><?= number_format($product->getPrice(), 2, ',', '.'); ?> TL</div>
+                    <p class="lead fs-6 mb-4"><?= htmlspecialchars($product->getDescription()); ?></p>
                     <div class="d-grid gap-2 d-sm-flex my-4">
-                        <form action="add_to_cart.php" method="POST" class="flex-grow-1">
-                            <input type="hidden" name="urun_id" value="<?= $product['Urun_ID']; ?>">
+
+                        <form method="POST" class="d-flex flex-grow-1 gap-3">
+                            
+                            <input type="hidden" name="product_id" value="<?= $product->getId(); ?>">
+                            
                             <input type="hidden" name="miktar" value="1">
                             <input type="hidden" name="boyut" value="1">
-                            <button type="submit" class="btn btn-success btn-lg w-100">Sepete Ekle</button>
-                        </form>
-                        <form action="product_detail.php?id=<?= $product['Urun_ID']; ?>" method="POST">
-                             <input type="hidden" name="product_id" value="<?= $product['Urun_ID']; ?>">
-                             <input type="hidden" name="add_to_favorites_action" value="1">
-                            <button type="submit" class="btn btn-outline-danger btn-lg w-100">Favorilere Ekle</button>
+                            <button type="submit" formaction="add_to_cart.php" class="btn btn-success btn-lg w-100">Sepete Ekle</button>
+
+                            <button type="submit" formaction="add_to_favorites.php" name="add_to_favorites_action" value="1" class="btn btn-outline-danger btn-lg w-100">Favorilere Ekle</button>
+                            
                         </form>
                     </div>
                 </div>
@@ -138,7 +159,7 @@ try {
             <div class="card-body tab-content p-lg-4 p-3" id="productInfoTabsContent">
                 <div class="tab-pane fade show active" id="description-tab-pane" role="tabpanel">
                     <h4>Ürün Açıklaması</h4>
-                    <p><?= nl2br(htmlspecialchars($product['Urun_Aciklamasi'] ?? 'Detaylı açıklama mevcut değil.')); ?></p>
+                    <p><?= nl2br(htmlspecialchars($product->getDescription() ?? 'Detaylı açıklama mevcut değil.')); ?></p>
                 </div>
                 <div class="tab-pane fade" id="reviews-tab-pane" role="tabpanel">
                     <h4>Müşteri Yorumları</h4>
