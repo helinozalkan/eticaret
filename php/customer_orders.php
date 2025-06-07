@@ -1,11 +1,21 @@
 <?php
-// Müşterinin kendi siparişlerini gördüğü sayfa
+// customer_orders.php - Müşterinin kendi siparişlerini gördüğü sayfa
+
 session_start();
-include_once '../database.php'; // Veritabanı bağlantısı
+
+// Yeni Database sınıfımızı projemize dahil ediyoruz.
+include_once '../database.php';
+
+// Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
+$db = Database::getInstance();
+$conn = $db->getConnection();
+
+// *** İYİLEŞTİRME: Tekrar eden metinler için sabit tanımlıyoruz. ***
+define('HTTP_HEADER_LOCATION', 'Location: ');
 
 // 1. Sadece giriş yapmış ve rolü 'customer' olanların bu sayfayı görmesini sağla
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'customer') {
-    header("Location: login.php?status=login_required");
+    header(HTTP_HEADER_LOCATION . "login.php?status=login_required");
     exit();
 }
 
@@ -14,8 +24,8 @@ $orders = [];
 $error_message = '';
 
 try {
+    // Buradan sonraki kodlar aynı kalıyor, çünkü $conn değişkeni doğru şekilde alındı.
     // 2. Müşterinin 'users' tablosundaki ID'sini kullanarak 'musteri' tablosundaki Musteri_ID'sini bul.
-    // Siparişler Musteri_ID ile tutuluyor.
     $stmt_musteri = $conn->prepare("SELECT Musteri_ID FROM musteri WHERE User_ID = :user_id");
     $stmt_musteri->bindParam(':user_id', $user_id, PDO::PARAM_INT);
     $stmt_musteri->execute();
@@ -47,7 +57,8 @@ try {
     <title>Siparişlerim</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/eticaret/css/css.css">
+    <link rel="stylesheet" href="../css/css.css">
+    <!-- Stil kodları aynı kalıyor -->
     <style>
         body { background-color: #f8f9fa; }
         .container { max-width: 960px; }
@@ -60,7 +71,7 @@ try {
 </head>
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark" style="background-color:rgb(155, 10, 109) ;">
+<nav class="navbar navbar-expand-lg navbar-dark" style="background-color:rgb(91, 140, 213) ;">
     <div class="container-fluid">
         <a class="navbar-brand d-flex ms-4" href="../index.php">
             <div class="baslik fs-3" style="color:white; text-decoration:none;">ETİCARET</div>
@@ -95,7 +106,7 @@ try {
         <div class="card shadow-sm">
             <div class="table-responsive">
                 <table class="table table-hover table-striped mb-0">
-                    <thead>
+                    <thead class="table-light">
                         <tr>
                             <th scope="col">Sipariş No</th>
                             <th scope="col">Tarih</th>
@@ -111,11 +122,8 @@ try {
                                 <td><?php echo date("d.m.Y", strtotime($order['Siparis_Tarihi'])); ?></td>
                                 <td><?php echo number_format($order['Siparis_Tutari'], 2, ',', '.'); ?> TL</td>
                                 <td>
-                                    <?php 
-                                        $status_class = '';
-                                        if ($order['Siparis_Durumu'] == 'Beklemede') $status_class = 'status-beklemede';
-                                        if ($order['Siparis_Durumu'] == 'Kargoda') $status_class = 'status-kargoda';
-                                        if ($order['Siparis_Durumu'] == 'Teslim Edildi') $status_class = 'status-teslim-edildi';
+                                    <?php
+                                        $status_class = 'status-' . strtolower(str_replace(' ', '-', $order['Siparis_Durumu']));
                                     ?>
                                     <span class="status-badge <?php echo $status_class; ?>">
                                         <?php echo htmlspecialchars($order['Siparis_Durumu']); ?>

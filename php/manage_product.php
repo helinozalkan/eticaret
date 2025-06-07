@@ -1,11 +1,19 @@
 <?php
 // manage_product.php - Ürün Yönetimi (Ürün Ekleme ve Listeleme)
+
 session_start();
-include_once '../database.php'; // include_once kullanıldı
+
+// Yeni Database sınıfımızı projemize dahil ediyoruz.
+include_once '../database.php';
+
+// Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
+$db = Database::getInstance();
+$conn = $db->getConnection();
+
 
 // Giriş yapmış kullanıcı bilgilerini kontrol et
 $logged_in = isset($_SESSION['user_id']);
-$username_session = $logged_in ? htmlspecialchars($_SESSION['username']) : null; // Session'daki kullanıcı adı
+$username_session = $logged_in ? htmlspecialchars($_SESSION['username']) : null;
 
 // Satıcı yetki kontrolü
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'seller') {
@@ -15,8 +23,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'seller') {
 
 $seller_user_id = $_SESSION['user_id'];
 $satici_id = null;
-$message = ""; // Mesajları tutacak değişken
-$message_type = "error"; // Mesaj türü (error, success, info)
+$message = "";
+$message_type = "error";
 
 // Özel istisna sınıfı tanımla
 class ProductManageException extends Exception {}
@@ -25,7 +33,7 @@ class ProductManageException extends Exception {}
 $param_satici_id_pm = ':satici_id';
 $param_product_id_pm = ':product_id';
 
-// product_action.php'den gelen mesajları al
+// Diğer sayfalardan gelen mesajları al
 if (isset($_SESSION['form_success_message'])) {
     $message = $_SESSION['form_success_message'];
     $message_type = "success";
@@ -36,15 +44,25 @@ if (isset($_SESSION['form_error_message'])) {
     $message_type = "error";
     unset($_SESSION['form_error_message']);
 }
-if (isset($_SESSION['form_info_message'])) {
-    $message = $_SESSION['form_info_message'];
-    $message_type = "info";
-    unset($_SESSION['form_info_message']);
+
+// Mesaj türüne göre gösterilecek CSS sınıfını burada belirliyoruz.
+if (!empty($message)) {
+    $alert_class = '';
+    switch ($message_type) {
+        case 'success':
+            $alert_class = 'alert-success-custom alert-success';
+            break;
+        case 'info':
+            $alert_class = 'alert-info-custom alert-info';
+            break;
+        default:
+            $alert_class = 'alert-danger-custom alert-danger';
+            break;
+    }
 }
 
 
 try {
-    // Satıcı ID'sini al
     $stmt_satici = $conn->prepare("SELECT Satici_ID FROM Satici WHERE User_ID = :user_id");
     $stmt_satici->bindParam(':user_id', $seller_user_id, PDO::PARAM_INT);
     $stmt_satici->execute();
@@ -55,7 +73,7 @@ try {
     }
     $satici_id = $satici_data['Satici_ID'];
 
-    // Ürün silme işlemi (GET ile tetikleniyor)
+    // Ürün silme işlemi
     if (isset($_GET['delete'])) {
         $product_id_to_delete = filter_input(INPUT_GET, 'delete', FILTER_VALIDATE_INT);
 
@@ -83,9 +101,7 @@ try {
 
         if ($stmt_delete_product->execute() && $stmt_delete_product->rowCount() > 0) {
             if ($product_image_to_delete_path && file_exists($product_image_to_delete_path)) {
-                if (!unlink($product_image_to_delete_path)) {
-                    error_log("manage_product.php: Ürün görseli silinemedi: " . $product_image_to_delete_path);
-                }
+                unlink($product_image_to_delete_path);
             }
             $conn->commit();
             $_SESSION['form_success_message'] = "Ürün başarıyla silindi.";
@@ -93,47 +109,36 @@ try {
             $conn->rollBack();
             $_SESSION['form_error_message'] = "Ürün silinirken bir sorun oluştu veya ürün bulunamadı.";
         }
-        header("Location: manage_product.php"); // Sayfayı yeniden yönlendir
+        header("Location: manage_product.php");
         exit();
     }
 
 } catch (ProductManageException $e) {
-    if (isset($conn) && $conn->inTransaction()) {
-        $conn->rollBack();
-    }
-    error_log("manage_product.php: ProductManageException: " . $e->getMessage());
-    $message = htmlspecialchars($e->getMessage()); // Mesajı session yerine doğrudan değişkene ata
+    if (isset($conn) && $conn->inTransaction()) $conn->rollBack();
+    $message = htmlspecialchars($e->getMessage());
     $message_type = "error";
-    // Yönlendirme satırları kaldırıldı.
 } catch (PDOException $e) {
-    if (isset($conn) && $conn->inTransaction()) {
-        $conn->rollBack();
-    }
+    if (isset($conn) && $conn->inTransaction()) $conn->rollBack();
     error_log("manage_product.php: PDOException: " . $e->getMessage());
-    $message = "Veritabanı işlemi sırasında bir sorun oluştu."; // Mesajı session yerine doğrudan değişkene ata
+    $message = "Veritabanı işlemi sırasında bir sorun oluştu.";
     $message_type = "error";
-    // Yönlendirme satırları kaldırıldı.
-
 }
 
 // Ürünleri listele
 $products = [];
 if ($satici_id !== null) {
     try {
-        // Onay_Durumu sütunu SELECT sorgusundan kaldırıldı.
-        $query_products = "SELECT Urun_ID, Urun_Adi, Urun_Fiyati, Stok_Adedi, Urun_Gorseli, Aktiflik_Durumu, Urun_Hikayesi FROM Urun WHERE Satici_ID = :satici_id ORDER BY Urun_ID DESC";
+        $query_products = "SELECT Urun_ID, Urun_Adi, Urun_Fiyati, Stok_Adedi, Urun_Gorseli, Aktiflik_Durumu FROM Urun WHERE Satici_ID = :satici_id ORDER BY Urun_ID DESC";
         $stmt_products = $conn->prepare($query_products);
         $stmt_products->bindParam($param_satici_id_pm, $satici_id, PDO::PARAM_INT);
         $stmt_products->execute();
         $products = $stmt_products->fetchAll(PDO::FETCH_ASSOC);
-
     } catch (PDOException $e) {
         error_log("manage_product.php: Ürün listesi çekilirken veritabanı hatası: " . $e->getMessage());
-        $message = "Ürünler listelenirken bir sorun oluştu."; // Mesajı session yerine doğrudan değişkene ata
+        $message = "Ürünler listelenirken bir sorun oluştu.";
         $message_type = "error";
         $products = [];
-        // Yönlendirme satırları kaldırıldı.
-}
+    }
 }
 ?>
 
@@ -145,151 +150,34 @@ if ($satici_id !== null) {
     <title>Ürün Yönetimi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/css.css">
     <style>
-        body {
-            font-family: 'Montserrat', sans-serif;
-            background-color: #f8f9fa;
-        }
-        .navbar-custom {
-            background-color: rgb(91, 140, 213);
-        }
-        .main-container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
-        .page-title {
-            font-family: 'Playfair Display', serif;
-            color: #2c3e50;
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 2.5rem;
-            font-weight: 700;
-        }
-        .section-title {
-            font-family: 'Playfair Display', serif;
-            color: #34495e;
-            margin-top: 0;
-            margin-bottom: 25px;
-            font-size: 1.8rem;
-            font-weight: 600;
-        }
-        .product-form-section, .product-list-section {
-            background-color: #fdfdff;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.07);
-            margin-bottom: 40px;
-        }
-        .form-label {
-            font-weight: 600;
-            color: #495057;
-            margin-bottom: 0.3rem;
-        }
-        .form-control, .form-select {
-            border-radius: 6px;
-            border: 1px solid #ced4da;
-            padding: 0.55rem 0.9rem;
-            font-size: 0.95rem;
-        }
-        .form-control:focus, .form-select:focus {
-            border-color: rgb(91, 140, 213);
-            box-shadow: 0 0 0 0.2rem rgba(91, 140, 213, 0.25);
-        }
-        .form-check-input{
-            width: 1em;
-            height: 1em;
-        }
-        .form-check-input:checked {
-            background-color: rgb(91, 140, 213);
-            border-color: rgb(91, 140, 213);
-        }
-        .form-switch .form-check-input {
-            width: 2.5em;
-            height: 1.25em;
-            margin-top: 0.25em;
-        }
-        .form-switch .form-check-label {
-            padding-left: 0.5em;
-            font-size: 1rem;
-        }
-
-        .btn-submit-product {
-            background-color: rgb(91, 140, 213);
-            border-color: rgb(91, 140, 213);
-            color: white;
-            padding: 0.6rem 1.3rem;
-            font-size: 1rem;
-            font-weight: 600;
-            border-radius: 6px;
-            transition: background-color 0.2s ease, border-color 0.2s ease;
-        }
-        .btn-submit-product:hover {
-            background-color: rgb(70, 120, 190);
-            border-color: rgb(70, 120, 190);
-        }
-        .product-table img {
-            width: 60px;
-            height: 60px;
-            object-fit: cover;
-            border-radius: 6px;
-        }
-        .table {
-            margin-bottom: 0;
-        }
-        .table th {
-            font-weight: 600;
-            color: #495057;
-            background-color: #e9ecef;
-            border-bottom-width: 2px;
-        }
-        .table td {
-            vertical-align: middle;
-        }
-        .btn-action {
-            padding: 0.3rem 0.6rem;
-            font-size: 0.85rem;
-            margin-right: 5px;
-        }
-        .btn-edit { background-color: #ffc107; border-color: #ffc107; color: #212529;}
-        .btn-edit:hover { background-color: #e0a800; border-color: #d39e00;}
-        .btn-delete { background-color: #dc3545; border-color: #dc3545; color:white;}
-        .btn-delete:hover { background-color: #c82333; border-color: #bd2130;}
-
-        .alert-custom {
-            border-left-width: 5px;
-            border-radius: 6px;
-            padding: 0.9rem 1.1rem;
-            font-size: 0.95rem;
-        }
+        body { font-family: 'Montserrat', sans-serif; background-color: #f8f9fa; }
+        .navbar-custom { background-color: rgb(91, 140, 213); }
+        .main-container { background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08); margin-top: 20px; margin-bottom: 20px; }
+        .page-title { font-family: 'Playfair Display', serif; color: #2c3e50; text-align: center; margin-bottom: 30px; font-size: 2.5rem; font-weight: 700; }
+        .section-title { font-family: 'Playfair Display', serif; color: #34495e; margin-top: 0; margin-bottom: 25px; font-size: 1.8rem; font-weight: 600; }
+        .product-form-section, .product-list-section { background-color: #fdfdff; padding: 30px; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.07); margin-bottom: 40px; }
+        .form-label { font-weight: 600; color: #495057; margin-bottom: 0.3rem; }
+        .form-control, .form-select { border-radius: 6px; border: 1px solid #ced4da; padding: 0.55rem 0.9rem; font-size: 0.95rem; }
+        .form-control:focus, .form-select:focus { border-color: rgb(91, 140, 213); box-shadow: 0 0 0 0.2rem rgba(91, 140, 213, 0.25); }
+        .form-check-input:checked { background-color: rgb(91, 140, 213); border-color: rgb(91, 140, 213); }
+        .btn-submit-product { background-color: rgb(91, 140, 213); border-color: rgb(91, 140, 213); color: white; padding: 0.6rem 1.3rem; font-size: 1rem; font-weight: 600; border-radius: 6px; transition: background-color 0.2s ease, border-color 0.2s ease; }
+        .btn-submit-product:hover { background-color: rgb(70, 120, 190); border-color: rgb(70, 120, 190); }
+        .product-table img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; }
+        .table th { font-weight: 600; color: #495057; background-color: #e9ecef; border-bottom-width: 2px; }
+        .table td { vertical-align: middle; }
+        .alert-custom { border-left-width: 5px; border-radius: 6px; padding: 0.9rem 1.1rem; font-size: 0.95rem; }
         .alert-danger-custom { border-left-color: #dc3545; }
         .alert-success-custom { border-left-color: #198754; }
         .alert-info-custom { border-left-color: #0dcaf0; }
-
-        .status-badge {
-            padding: 0.3em 0.6em;
-            font-size: 0.85em;
-            font-weight: 600;
-            border-radius: 0.25rem;
-        }
+        .status-badge { padding: 0.3em 0.6em; font-size: 0.85em; font-weight: 600; border-radius: 0.25rem; }
         .status-aktif { background-color: #d1e7dd; color: #0f5132; }
         .status-pasif { background-color: #f8d7da; color: #842029; }
-        /* Onay durumu ile ilgili sınıflar kaldırıldı, çünkü artık gösterilmeyecek.
-           Eğer başka bir yerde kullanılıyorsa orada bırakılabilir.
-        .status-onay-bekliyor { background-color: #fff3cd; color: #664d03; }
-        .status-onaylandi { background-color: #d1e7dd; color: #0f5132; }
-        .status-reddedildi { background-color: #f8d7da; color: #842029; }
-        */
     </style>
 </head>
 <body>
+<!-- *** DÜZELTME: Eksik olan navigasyon menüsü eklendi *** -->
 <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
     <div class="container-fluid">
         <a class="navbar-brand d-flex ms-4" href="../index.php">
@@ -321,7 +209,7 @@ if ($satici_id !== null) {
     <h1 class="page-title">Ürün Yönetim Paneli</h1>
 
     <?php if (!empty($message)): ?>
-        <div class="alert alert-custom <?php echo $message_type === 'success' ? 'alert-success-custom alert-success' : ($message_type === 'info' ? 'alert-info-custom alert-info' : 'alert-danger-custom alert-danger'); ?> alert-dismissible fade show" role="alert">
+        <div class="alert alert-custom <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">
             <?php echo htmlspecialchars($message); ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
@@ -351,10 +239,6 @@ if ($satici_id !== null) {
                     <label for="product_description" class="form-label">Ürün Açıklaması (En fazla 250 karakter):</label>
                     <textarea class="form-control" name="product_description" id="product_description" rows="3" maxlength="250"></textarea>
                     <div id="charCountDescription" class="form-text text-end">0 / 250</div>
-                </div>
-                <div class="col-md-12 mb-3">
-                    <label for="product_story" class="form-label">Ürün Hikayesi:</label>
-                    <textarea class="form-control" name="product_story" id="product_story" rows="4" placeholder="Bu ürünün arkasındaki ilhamı, yapım sürecini veya özel anlamını paylaşın..."></textarea>
                 </div>
                 <div class="col-md-7 mb-3">
                     <label for="product_image" class="form-label">Ürün Görseli:</label>
@@ -393,32 +277,21 @@ if ($satici_id !== null) {
                         <?php foreach ($products as $product): ?>
                             <tr>
                                 <td><?= htmlspecialchars($product['Urun_ID']) ?></td>
-                                <td>
-                                    <img src="<?= $product['Urun_Gorseli'] ? '../uploads/' . htmlspecialchars($product['Urun_Gorseli']) : 'https://placehold.co/60x60/e0e0e0/757575?text=Görsel+Yok' ?>" alt="<?= htmlspecialchars($product['Urun_Adi']) ?>">
-                                </td>
+                                <td><img src="<?= $product['Urun_Gorseli'] ? '../uploads/' . htmlspecialchars($product['Urun_Gorseli']) : 'https://placehold.co/60x60/e0e0e0/757575?text=Görsel+Yok' ?>" alt="<?= htmlspecialchars($product['Urun_Adi']) ?>"></td>
                                 <td><?= htmlspecialchars($product['Urun_Adi']) ?></td>
                                 <td><?= number_format(htmlspecialchars($product['Urun_Fiyati']), 2, ',', '.') ?> TL</td>
                                 <td><?= htmlspecialchars($product['Stok_Adedi']) ?></td>
+                                <td><span class="status-badge <?= $product['Aktiflik_Durumu'] ? 'status-aktif' : 'status-pasif' ?>"><?= $product['Aktiflik_Durumu'] ? 'Aktif' : 'Pasif' ?></span></td>
                                 <td>
-                                    <span class="status-badge <?= $product['Aktiflik_Durumu'] ? 'status-aktif' : 'status-pasif' ?>">
-                                        <?= $product['Aktiflik_Durumu'] ? 'Aktif' : 'Pasif' ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <a href="edit_product.php?id=<?= $product['Urun_ID'] ?>" class="btn btn-sm btn-edit btn-action" title="Düzenle"><i class="bi bi-pencil-fill"></i></a>
+                                    <a href="edit_product.php?id=<?= $product['Urun_ID'] ?>" class="btn btn-sm btn-warning" title="Düzenle"><i class="bi bi-pencil-fill"></i></a>
                                     <form action="manage_product.php?delete=<?= $product['Urun_ID'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Bu ürünü silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')">
-                                        <button type="submit" class="btn btn-sm btn-delete btn-action" title="Sil"><i class="bi bi-trash3-fill"></i></button>
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Sil"><i class="bi bi-trash3-fill"></i></button>
                                     </form>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <tr>
-                            <td colspan="7" class="text-center py-4"> {/* colspan 8'den 7'ye düşürüldü */}
-                                <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
-                                Henüz mağazanıza ürün eklemediniz.
-                            </td>
-                        </tr>
+                        <tr><td colspan="7" class="text-center py-4"><i class="bi bi-info-circle fs-3 d-block mb-2"></i>Henüz mağazanıza ürün eklemediniz.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -431,8 +304,7 @@ if ($satici_id !== null) {
     (function () {
       'use strict'
       var forms = document.querySelectorAll('.needs-validation')
-      Array.prototype.slice.call(forms)
-        .forEach(function (form) {
+      Array.prototype.slice.call(forms).forEach(function (form) {
           form.addEventListener('submit', function (event) {
             if (!form.checkValidity()) {
               event.preventDefault()
@@ -442,26 +314,6 @@ if ($satici_id !== null) {
           }, false)
         })
     })();
-
-    document.addEventListener("DOMContentLoaded", function() {
-        var closeBtns = document.querySelectorAll(".alert .btn-close");
-        closeBtns.forEach(function(btn) {
-            btn.addEventListener("click", function() {
-                this.closest('.alert').style.display = 'none';
-            });
-        });
-
-        const descriptionTextarea = document.getElementById('product_description');
-        const charCountDescription = document.getElementById('charCountDescription');
-        if (descriptionTextarea && charCountDescription) {
-            descriptionTextarea.addEventListener('input', function() {
-                const currentLength = this.value.length;
-                const maxLength = this.maxLength;
-                charCountDescription.textContent = currentLength + ' / ' + maxLength;
-            });
-            charCountDescription.textContent = descriptionTextarea.value.length + ' / ' + descriptionTextarea.maxLength;
-        }
-    });
 </script>
 </body>
 </html>

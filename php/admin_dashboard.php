@@ -1,6 +1,13 @@
 <?php
 session_start();
-include('../database.php'); // database.php zaten PDO bağlantısı kuruyor
+
+// Yeni Database sınıfımızı projemize dahil ediyoruz.
+include_once '../database.php';
+
+// Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
+$db = Database::getInstance();
+$conn = $db->getConnection();
+
 
 // Admin yetki kontrolü: Sadece adminler bu sayfaya erişebilir.
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
@@ -62,14 +69,15 @@ try {
      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
      <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-     <link rel="stylesheet" href="../css/css.css"> <!-- ../css/css.css olarak düzeltildi -->
+     <link rel="stylesheet" href="../css/css.css">
+     <!-- Stil kodları değişmediği için aynı kalıyor -->
      <style>
         body {
             font-family: 'Montserrat', sans-serif;
             background-color: #f8f9fa;
         }
-        .navbar-admin { /* Admin paneli için özel navbar sınıfı */
-            background-color: rgb(34, 132, 17); /* Yeşil renk */
+        .navbar-admin {
+            background-color: rgb(34, 132, 17);
         }
         .main-container {
             background-color: #ffffff;
@@ -95,7 +103,7 @@ try {
             box-shadow: 0 5px 15px rgba(0,0,0,0.07);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             height: 100%;
-            color: white; /* Yazı rengi beyaz yapıldı */
+            color: white;
         }
         .stat-card:hover {
             transform: translateY(-5px);
@@ -103,26 +111,26 @@ try {
         }
         .stat-card .card-header {
             background-color: transparent;
-            border-bottom: 1px solid rgba(255,255,255,0.3); /* Beyaz ve yarı saydam border */
+            border-bottom: 1px solid rgba(255,255,255,0.3);
             font-size: 1.1rem;
             font-weight: 600;
             padding-bottom: 10px;
             margin-bottom: 15px;
-            color: white; /* Başlık rengi beyaz */
+            color: white;
         }
         .stat-card .card-title {
             font-size: 3rem;
             font-weight: 700;
             margin-bottom: 10px;
-            color: white; /* Sayı rengi beyaz */
+            color: white;
         }
         .stat-card .card-text {
             font-size: 0.95rem;
-             color: rgba(255,255,255,0.85); /* Açıklama rengi daha açık beyaz */
+             color: rgba(255,255,255,0.85);
         }
-        .stat-card.bg-primary { background-color: #0d6efd !important; } /* Bootstrap primary */
-        .stat-card.bg-success { background-color: #198754 !important; } /* Bootstrap success */
-        .stat-card.bg-danger { background-color: #dc3545 !important; }  /* Bootstrap danger */
+        .stat-card.bg-primary { background-color: #0d6efd !important; }
+        .stat-card.bg-success { background-color: #198754 !important; }
+        .stat-card.bg-danger { background-color: #dc3545 !important; }
 
         .table-section-title {
             font-family: 'Playfair Display', serif;
@@ -182,7 +190,6 @@ try {
                         <i class="bi bi-patch-check-fill me-1"></i>Satıcı Doğrulama
                     </a>
                 </li>
-                <!-- Ürün Doğrulama linki kaldırıldı -->
             </ul>
             <div class="d-flex me-3 align-items-center">
                 <i class="bi bi-person-circle text-white fs-4 me-2"></i>
@@ -247,7 +254,7 @@ try {
                     <td><?php echo htmlspecialchars($user['id']); ?></td>
                     <td><?php echo htmlspecialchars($user['username']); ?></td>
                     <td><?php echo htmlspecialchars($user['email']); ?></td>
-                    <td><?php echo htmlspecialchars(ucfirst($user['role'])); /* Rolü büyük harfle başlat */ ?></td>
+                    <td><?php echo htmlspecialchars(ucfirst($user['role'])); ?></td>
                     <td>
                         <?php
                         $user_status = 'Bilgi Yok';
@@ -272,8 +279,6 @@ try {
                                      $status_class = 'status-satici-bilgisi-eksik';
                                 }
                             } elseif ($user['role'] === 'customer') {
-                                // Müşteriler için Uyelik_Durumu kontrolü (eğer varsa)
-                                // Şemanızda Musteri.Uyelik_Durumu BOOLEAN DEFAULT TRUE
                                 $stmt_customer_status = $conn->prepare("SELECT Uyelik_Durumu FROM Musteri WHERE User_ID = :user_id");
                                 $stmt_customer_status->bindParam(':user_id', $user['id'], PDO::PARAM_INT);
                                 $stmt_customer_status->execute();
@@ -288,7 +293,7 @@ try {
                                     }
                                 } else {
                                      $user_status = 'Müşteri Bilgisi Eksik';
-                                     $status_class = 'status-satici-bilgisi-eksik'; // Benzer bir stil kullanılabilir
+                                     $status_class = 'status-satici-bilgisi-eksik';
                                 }
                             } elseif ($user['role'] === 'admin') {
                                 $user_status = 'Aktif';
@@ -297,7 +302,7 @@ try {
                         } catch (PDOException $e) {
                             error_log("admin_dashboard.php - Kullanıcı durumu çekilirken hata (ID: ".$user['id']."): " . $e->getMessage());
                             $user_status = 'Hata';
-                            $status_class = 'status-pasif'; // Hata durumu için
+                            $status_class = 'status-pasif';
                         }
                         echo '<span class="status-badge ' . $status_class . '">' . htmlspecialchars($user_status) . '</span>';
                         ?>

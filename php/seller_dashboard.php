@@ -1,26 +1,35 @@
 <?php
-// Satıcı panel sayfası
+// seller_dashboard.php - Satıcı panel sayfası
+
 session_start();
-include_once '../database.php'; // include_once kullanıldı
+
+// Yeni Database sınıfımızı projemize dahil ediyoruz.
+include_once '../database.php';
+
+// Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
+$db = Database::getInstance();
+$conn = $db->getConnection();
+
 
 // Giriş yapmış kullanıcı bilgilerini kontrol et
-$logged_in = isset($_SESSION['user_id']); // Kullanıcı giriş yapmış mı kontrol et
-$username = $logged_in ? htmlspecialchars($_SESSION['username']) : null; // Kullanıcı adını al ve temizle
+$logged_in = isset($_SESSION['user_id']);
+$username = $logged_in ? htmlspecialchars($_SESSION['username']) : null;
 
 // Admin veya customer rolündeki kullanıcıların seller_dashboard'a erişimini engelle
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'seller') {
-    header("Location: login.php?status=unauthorized"); // Yetkisiz erişim durumunda yönlendir
+    header("Location: login.php?status=unauthorized");
     exit();
 }
 
-$user_id = $_SESSION['user_id']; // Kullanıcı ID'sini alıyoruz
+$user_id = $_SESSION['user_id'];
 
 // Satıcının Satici_ID ve mağaza adı, ad soyadını çekmek için sorgu
-$store_name = "Mağaza Adı Bulunamadı"; // Varsayılan değer
-$seller_name = "Satıcı Adı Bulunamadı"; // Varsayılan değer
-$satici_id = null; // Varsayılan değer
+$store_name = "Mağaza Adı Bulunamadı";
+$seller_name = "Satıcı Adı Bulunamadı";
+$satici_id = null;
 
 try {
+    // Buradan sonraki kodlar aynı kalıyor, çünkü $conn değişkeni doğru şekilde alındı.
     $seller_info_query = "SELECT Satici_ID, Magaza_Adi, Ad_Soyad FROM satici WHERE User_ID = :user_id";
     $stmt_seller_info = $conn->prepare($seller_info_query);
     $stmt_seller_info->bindParam(':user_id', $user_id, PDO::PARAM_INT);
@@ -28,7 +37,7 @@ try {
     $seller_info = $stmt_seller_info->fetch(PDO::FETCH_ASSOC);
 
     if ($seller_info) {
-        $satici_id = $seller_info['Satici_ID'];  // Satici_ID'yi alıyoruz
+        $satici_id = $seller_info['Satici_ID'];
         $store_name = htmlspecialchars($seller_info['Magaza_Adi']);
         $seller_name = htmlspecialchars($seller_info['Ad_Soyad']);
     } else {
@@ -36,26 +45,24 @@ try {
     }
 } catch (PDOException $e) {
     error_log("seller_dashboard.php: Satıcı bilgisi çekilirken veritabanı hatası: " . $e->getMessage());
-    // $store_name ve $seller_name zaten varsayılan hata mesajlarını içeriyor.
 }
 
 // Satıcının ürünlerini çekmek için sorgu
 $product_result = null;
 if ($satici_id !== null) {
     try {
-        $product_query = "SELECT Urun_ID, Urun_Adi, Urun_Fiyati, Urun_Gorseli FROM Urun WHERE Satici_ID = :satici_id AND Aktiflik_Durumu = 1"; // Sadece aktif ürünleri gösterelim
+        $product_query = "SELECT Urun_ID, Urun_Adi, Urun_Fiyati, Urun_Gorseli FROM Urun WHERE Satici_ID = :satici_id AND Aktiflik_Durumu = 1";
         $stmt_product = $conn->prepare($product_query);
         $stmt_product->bindParam(':satici_id', $satici_id, PDO::PARAM_INT);
         $stmt_product->execute();
-        $product_result = $stmt_product->fetchAll(PDO::FETCH_ASSOC); // Tüm sonuçları al
+        $product_result = $stmt_product->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         error_log("seller_dashboard.php: Ürünler çekilirken veritabanı hatası: " . $e->getMessage());
-        $product_result = []; // Hata durumunda boş dizi döndür
+        $product_result = [];
     }
 } else {
-    $product_result = []; // Satıcı ID yoksa boş dizi döndür
+    $product_result = [];
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -69,47 +76,49 @@ if ($satici_id !== null) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Slab:wght@100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="../css/css.css"> <style>
+    <link rel="stylesheet" href="../css/css.css">
+    <!-- Stil kodları değişmediği için aynı kalıyor -->
+    <style>
         body {
             font-family: 'Montserrat', sans-serif;
-            background-color: #f8f9fa; /* Bootstrap'in hafif gri arka planı */
+            background-color: #f8f9fa;
         }
-        .navbar-custom { /* Navbarda kullanılan renk navbar'a taşındı */
+        .navbar-custom {
              background-color: rgb(91, 140, 213);
         }
         .seller-header {
             background: linear-gradient(135deg, rgb(91, 140, 213) 0%, rgb(120, 160, 230) 100%);
             color: white;
             padding: 40px 20px;
-            border-radius: 0 0 25px 25px; /* Alt köşeleri yuvarlat */
+            border-radius: 0 0 25px 25px;
             text-align: center;
             margin-bottom: 30px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
         .store-title {
             font-family: 'Playfair Display', serif;
-            font-size: 2.8rem; /* Mağaza adı daha büyük */
+            font-size: 2.8rem;
             font-weight: 700;
             margin-bottom: 5px;
             letter-spacing: 1px;
         }
         .seller-subtitle {
-            font-size: 1.3rem; /* Satıcı adı biraz daha belirgin */
+            font-size: 1.3rem;
             font-weight: 400;
             opacity: 0.9;
         }
         .search-bar {
             display: flex;
-            margin-bottom: 30px; /* Arama çubuğu ile ürünler arasına boşluk eklendi */
-            max-width: 600px; /* Arama çubuğu genişliği sınırlandırıldı */
+            margin-bottom: 30px;
+            max-width: 600px;
             margin-left: auto;
             margin-right: auto;
         }
         #search-input {
             flex-grow: 1;
-            padding: 10px 15px; /* Padding ayarlandı */
-            border: 1px solid #ced4da; /* Bootstrap varsayılan border */
-            border-radius: 20px 0 0 20px; /* Sol köşeler yuvarlatıldı */
+            padding: 10px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 20px 0 0 20px;
             font-size: 1rem;
         }
         .search-bar button {
@@ -117,24 +126,24 @@ if ($satici_id !== null) {
             background-color: rgb(91, 140, 213);
             color: #fff;
             border: none;
-            border-radius: 0 20px 20px 0; /* Sağ köşeler yuvarlatıldı */
+            border-radius: 0 20px 20px 0;
             cursor: pointer;
             transition: background-color 0.2s ease-in-out;
         }
         .search-bar button:hover {
-            background-color: rgb(70, 120, 190); /* Hover rengi koyulaştırıldı */
+            background-color: rgb(70, 120, 190);
         }
-        .products-grid { /* Eski .products sınıfı yerine */
+        .products-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Kart genişliği ayarlandı */
-            gap: 25px; /* Kartlar arası boşluk artırıldı */
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
         }
-        .product-card { /* Eski .product sınıfı yerine */
+        .product-card {
             background-color: #fff;
-            border-radius: 15px; /* Kart köşeleri daha yuvarlak */
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08); /* Gölge yumuşatıldı */
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            overflow: hidden; /* Resmin karttan taşmasını engelle */
+            overflow: hidden;
         }
         .product-card:hover {
             transform: translateY(-5px);
@@ -142,31 +151,32 @@ if ($satici_id !== null) {
         }
         .product-image {
             width: 100%;
-            height: 220px; /* Resim yüksekliği ayarlandı */
+            height: 220px;
             object-fit: cover;
         }
-        .product-card-body { /* Yeni sınıf */
+        .product-card-body {
             padding: 20px;
             text-align: center;
         }
         .product-name {
-            font-size: 1.15rem; /* Ürün adı boyutu */
+            font-size: 1.15rem;
             font-weight: 600;
             color: #333;
             margin-bottom: 8px;
-            min-height: 44px; /* İki satırlık isim için yer ayır */
+            min-height: 44px;
             display: -webkit-box;
-            -webkit-line-clamp: 2;
+            -webkit-line-clamp: 2; /* Eski/WebKit tarayıcılar için */
+            line-clamp: 2;         /* Yeni ve standart tarayıcılar için */
             -webkit-box-orient: vertical;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .product-price {
             color: rgb(91, 140, 213);
-            font-size: 1.25rem; /* Fiyat boyutu artırıldı */
-            font-weight: 700; /* Fiyat daha kalın */
+            font-size: 1.25rem;
+            font-weight: 700;
         }
-        .no-products-message { /* Ürün olmadığında gösterilecek mesaj için */
+        .no-products-message {
             text-align: center;
             padding: 40px;
             background-color: #e9ecef;
@@ -244,13 +254,14 @@ if ($satici_id !== null) {
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // JavaScript kısmı değişmediği için aynı kalıyor
     function searchProducts() {
         const input = document.getElementById('search-input').value.toLowerCase();
         const products = document.getElementsByClassName('product-card');
 
         for (let i = 0; i < products.length; i++) {
             const productNameElement = products[i].getElementsByClassName('product-name')[0];
-            if (productNameElement) { // Elementin varlığını kontrol et
+            if (productNameElement) {
                 const productName = productNameElement.innerText.toLowerCase();
                 if (productName.includes(input)) {
                     products[i].style.display = '';

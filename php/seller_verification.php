@@ -1,7 +1,15 @@
 <?php
 // seller_verification.php - Admin Satıcı Doğrulama Sayfası
+
 session_start();
-include('../database.php'); // database.php PDO bağlantısını kuruyor
+
+// Yeni Database sınıfımızı projemize dahil ediyoruz.
+include_once '../database.php';
+
+// Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
+$db = Database::getInstance();
+$conn = $db->getConnection();
+
 
 // Admin yetki kontrolü
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
@@ -20,33 +28,21 @@ try {
     // POST isteği ile gelen doğrulama/reddetme işlemlerini yönet
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['satici_user_id'])) {
         $satici_user_id_posted = filter_input(INPUT_POST, 'satici_user_id', FILTER_VALIDATE_INT);
-        $action = $_POST['action']; // 'approve' veya 'reject'
+        $action = $_POST['action'];
 
         if ($satici_user_id_posted === false || $satici_user_id_posted <= 0) {
             $message = "Geçersiz satıcı ID'si.";
             $message_type = "error";
         } else {
-            // HesapDurumu'nu güncelle: 1 = Onaylandı, 0 = Reddedildi/Doğrulama Bekliyor
-            // Şemanızda HesapDurumu BOOLEAN DEFAULT TRUE (1). Reddedilince veya ilk kayıtta 0 olmalı.
             $new_status = ($action === 'approve') ? 1 : 0; // Onay = 1, Red = 0
 
             $conn->beginTransaction();
 
-            // Satici tablosundaki HesapDurumu'nu güncelle
             $stmt_update_seller = $conn->prepare("UPDATE Satici SET HesapDurumu = :new_status WHERE User_ID = :user_id");
             $stmt_update_seller->bindParam(':new_status', $new_status, PDO::PARAM_INT);
             $stmt_update_seller->bindParam(':user_id', $satici_user_id_posted, PDO::PARAM_INT);
 
             if ($stmt_update_seller->execute()) {
-                // Eğer satıcı reddedildiyse (HesapDurumu = 0 yapıldıysa), users tablosundaki rolünü 'customer' yapabiliriz
-                // veya hesabı tamamen pasifize edebiliriz. Şimdilik sadece Satici.HesapDurumu güncelleniyor.
-                // İsteğe bağlı: Reddedilen satıcının 'users' tablosundaki 'role'ünü 'customer' olarak değiştirebilirsiniz.
-                // if ($new_status == 0) {
-                //     $stmt_update_user_role = $conn->prepare("UPDATE users SET role = 'customer' WHERE id = :user_id");
-                //     $stmt_update_user_role->bindParam(':user_id', $satici_user_id_posted, PDO::PARAM_INT);
-                //     $stmt_update_user_role->execute();
-                // }
-
                 $conn->commit();
                 $message = "Satıcı başarıyla " . (($action === 'approve') ? 'onaylandı' : 'reddedildi/pasif hale getirildi') . ".";
                 $message_type = "success";
@@ -58,9 +54,7 @@ try {
         }
     }
 
-    // Doğrulama bekleyen satıcıları çek (HesapDurumu = 0 olanları ve rolü 'seller' olanları)
-    // Satici tablosundaki HesapDurumu = 0 (varsayılan veya reddedilmiş) ve users.role = 'seller' olanları çekiyoruz.
-    // Bu, yanlışlıkla müşteri olmuş ama satici tablosunda kaydı olanları engeller.
+    // Doğrulama bekleyen satıcıları çek
     $query_unverified_sellers = "SELECT
                                     u.id AS user_id,
                                     u.username,
@@ -74,7 +68,7 @@ try {
                                 JOIN
                                     Satici s ON u.id = s.User_ID
                                 WHERE
-                                    s.HesapDurumu = 0 AND u.role = 'seller'"; // Sadece rolü hala seller olan ve durumu 0 olanlar
+                                    s.HesapDurumu = 0 AND u.role = 'seller'";
     $stmt_unverified_sellers = $conn->prepare($query_unverified_sellers);
     $stmt_unverified_sellers->execute();
     $unverified_sellers = $stmt_unverified_sellers->fetchAll(PDO::FETCH_ASSOC);
@@ -87,7 +81,25 @@ try {
         $conn->rollBack();
     }
 }
+
+// *** DÜZELTME: İç içe ternary operatörü yerine switch-case yapısı ***
+// Mesaj türüne göre gösterilecek CSS sınıfını belirleyen mantık.
+if (!empty($message)) {
+    $alert_class = '';
+    switch ($message_type) {
+        case 'success':
+            $alert_class = 'alert-success-custom alert-success';
+            break;
+        case 'info':
+            $alert_class = 'alert-info-custom alert-info';
+            break;
+        default: // 'error' ve diğer tüm durumlar için
+            $alert_class = 'alert-danger-custom alert-danger';
+            break;
+    }
+}
 ?>
+
 
 <!DOCTYPE html>
 <html lang="tr">
@@ -101,147 +113,34 @@ try {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/css.css">
+    <!-- Stil kodları aynı kalıyor -->
     <style>
-        body {
-            font-family: 'Montserrat', sans-serif;
-            background-color: #f8f9fa;
-        }
-        .navbar-admin {
-            background-color: rgb(34, 132, 17);
-        }
-        .main-container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
-        .page-title {
-            font-family: 'Playfair Display', serif;
-            color: #2c3e50;
-            text-align: center;
-            margin-bottom: 35px;
-            font-size: 2.5rem;
-            font-weight: 700;
-        }
-        .seller-card {
-            background-color: #fff;
-            border: 1px solid #e0e0e0; /* Daha yumuşak border */
-            border-radius: 10px;
-            padding: 25px; /* İç boşluk artırıldı */
-            margin-bottom: 25px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06); /* Hafif gölge */
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            display: flex; /* Flexbox ile iç düzen */
-            flex-direction: column; /* Dikeyde sırala */
-            gap: 15px; /* Elemanlar arası boşluk */
-        }
-        @media (min-width: 768px) { /* Orta ve büyük ekranlarda yatay düzen */
-            .seller-card {
-                flex-direction: row;
-                align-items: center; /* Dikeyde ortala */
-            }
-        }
-        .seller-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.09);
-        }
-        .seller-avatar { /* Satıcı için bir avatar alanı */
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background-color: rgb(34, 132, 17, 0.1); /* Tema renginin açığı */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 0; /* Yatay düzende sağ boşluk */
-            margin-bottom: 15px; /* Dikey düzende alt boşluk */
-            flex-shrink: 0; /* Küçülmesini engelle */
-        }
-         @media (min-width: 768px) {
-            .seller-avatar {
-                margin-right: 20px;
-                margin-bottom: 0;
-            }
-        }
-        .seller-avatar i {
-            font-size: 2.5rem; /* İkon boyutu */
-            color: rgb(34, 132, 17); /* Ana admin rengi */
-        }
-        .seller-info {
-            flex-grow: 1; /* Kalan alanı doldur */
-        }
-        .seller-info h5 {
-            font-family: 'Playfair Display', serif;
-            margin-bottom: 5px;
-            color: #34495e;
-            font-size: 1.4rem;
-            font-weight: 600;
-        }
-        .seller-info p {
-            margin-bottom: 4px;
-            color: #555;
-            font-size: 0.9rem;
-        }
-        .seller-info p strong {
-            color: #333;
-        }
-        .btn-group-actions { /* Buton grubu için yeni sınıf */
-            display: flex;
-            gap: 10px;
-            margin-top: 15px; /* Dikey düzende üst boşluk */
-            align-self: stretch; /* Dikey düzende butonların genişlemesi için */
-        }
-        @media (min-width: 768px) {
-             .btn-group-actions {
-                margin-left: auto; /* Butonları sağa yasla */
-                margin-top: 0;
-                align-self: center; /* Dikeyde ortala */
-            }
-        }
-        .btn-group-actions .btn {
-            padding: 0.5rem 1rem; /* Buton iç boşluğu */
-            font-size: 0.9rem;
-            font-weight: 500;
-            border-radius: 6px;
-        }
-        .btn-approve {
-            background-color: #198754; /* Bootstrap success */
-            border-color: #198754;
-            color: white;
-        }
-        .btn-approve:hover {
-            background-color: #157347;
-            border-color: #146c43;
-        }
-        .btn-reject {
-            background-color: #dc3545; /* Bootstrap danger */
-            border-color: #dc3545;
-            color: white;
-        }
-        .btn-reject:hover {
-            background-color: #bb2d3b;
-            border-color: #b02a37;
-        }
-        .alert-custom {
-            border-left-width: 5px;
-            border-radius: 6px;
-            padding: 0.9rem 1.1rem;
-            font-size: 0.95rem;
-        }
+        body { font-family: 'Montserrat', sans-serif; background-color: #f8f9fa; }
+        .navbar-admin { background-color: rgb(34, 132, 17); }
+        .main-container { background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08); margin-top: 20px; margin-bottom: 20px; }
+        .page-title { font-family: 'Playfair Display', serif; color: #2c3e50; text-align: center; margin-bottom: 35px; font-size: 2.5rem; font-weight: 700; }
+        .seller-card { background-color: #fff; border: 1px solid #e0e0e0; border-radius: 10px; padding: 25px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06); transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; display: flex; flex-direction: column; gap: 15px; }
+        @media (min-width: 768px) { .seller-card { flex-direction: row; align-items: center; } }
+        .seller-card:hover { transform: translateY(-4px); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.09); }
+        .seller-avatar { width: 80px; height: 80px; border-radius: 50%; background-color: rgb(34, 132, 17, 0.1); display: flex; align-items: center; justify-content: center; margin-right: 0; margin-bottom: 15px; flex-shrink: 0; }
+        @media (min-width: 768px) { .seller-avatar { margin-right: 20px; margin-bottom: 0; } }
+        .seller-avatar i { font-size: 2.5rem; color: rgb(34, 132, 17); }
+        .seller-info { flex-grow: 1; }
+        .seller-info h5 { font-family: 'Playfair Display', serif; margin-bottom: 5px; color: #34495e; font-size: 1.4rem; font-weight: 600; }
+        .seller-info p { margin-bottom: 4px; color: #555; font-size: 0.9rem; }
+        .seller-info p strong { color: #333; }
+        .btn-group-actions { display: flex; gap: 10px; margin-top: 15px; align-self: stretch; }
+        @media (min-width: 768px) { .btn-group-actions { margin-left: auto; margin-top: 0; align-self: center; } }
+        .btn-group-actions .btn { padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 500; border-radius: 6px; }
+        .btn-approve { background-color: #198754; border-color: #198754; color: white; }
+        .btn-approve:hover { background-color: #157347; border-color: #146c43; }
+        .btn-reject { background-color: #dc3545; border-color: #dc3545; color: white; }
+        .btn-reject:hover { background-color: #bb2d3b; border-color: #b02a37; }
+        .alert-custom { border-left-width: 5px; border-radius: 6px; padding: 0.9rem 1.1rem; font-size: 0.95rem; }
         .alert-danger-custom { border-left-color: #dc3545; }
         .alert-success-custom { border-left-color: #198754; }
         .alert-info-custom { border-left-color: #0dcaf0; }
-
-        .no-verification-message {
-            text-align: center;
-            padding: 40px;
-            background-color: #e9ecef;
-            border-radius: 10px;
-            color: #6c757d;
-            font-size: 1.1rem;
-        }
+        .no-verification-message { text-align: center; padding: 40px; background-color: #e9ecef; border-radius: 10px; color: #6c757d; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -255,22 +154,9 @@ try {
         </button>
         <div class="collapse navbar-collapse mt-1" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0" style="margin-left: 110px;">
-                <li class="nav-item ps-3">
-                    <a class="nav-link" href="admin_dashboard.php">
-                        <i class="bi bi-speedometer2 me-1"></i>Kontrol Paneli
-                    </a>
-                </li>
-                <li class="nav-item ps-3">
-                    <a class="nav-link" href="admin_user.php">
-                        <i class="bi bi-people-fill me-1"></i>Kullanıcı Yönetimi
-                    </a>
-                </li>
-                <li class="nav-item ps-3">
-                    <a class="nav-link active" href="seller_verification.php">
-                        <i class="bi bi-patch-check-fill me-1"></i>Satıcı Doğrulama
-                    </a>
-                </li>
-                <!-- Ürün Doğrulama linki zaten kaldırılmıştı -->
+                <li class="nav-item ps-3"><a class="nav-link" href="admin_dashboard.php"><i class="bi bi-speedometer2 me-1"></i>Kontrol Paneli</a></li>
+                <li class="nav-item ps-3"><a class="nav-link" href="admin_user.php"><i class="bi bi-people-fill me-1"></i>Kullanıcı Yönetimi</a></li>
+                <li class="nav-item ps-3"><a class="nav-link active" href="seller_verification.php"><i class="bi bi-patch-check-fill me-1"></i>Satıcı Doğrulama</a></li>
             </ul>
             <div class="d-flex me-3 align-items-center">
                 <i class="bi bi-person-circle text-white fs-4 me-2"></i>
@@ -288,7 +174,8 @@ try {
     <h1 class="page-title"><i class="bi bi-person-check-fill me-2"></i>Satıcı Doğrulama İşlemleri</h1>
 
     <?php if (!empty($message)): ?>
-        <div class="alert alert-custom <?php echo $message_type === 'success' ? 'alert-success-custom alert-success' : ($message_type === 'info' ? 'alert-info-custom alert-info' : 'alert-danger-custom alert-danger'); ?> alert-dismissible fade show" role="alert">
+        <!-- *** DÜZELTME: HTML içinde artık sadece temiz bir değişken kullanıyoruz. *** -->
+        <div class="alert alert-custom <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">
             <?php echo htmlspecialchars($message); ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
@@ -303,7 +190,7 @@ try {
         <?php foreach ($unverified_sellers as $seller): ?>
             <div class="seller-card">
                 <div class="seller-avatar">
-                    <i class="bi bi-shop"></i> <!-- Mağaza ikonu -->
+                    <i class="bi bi-shop"></i>
                 </div>
                 <div class="seller-info">
                     <h5><?= htmlspecialchars($seller['Magaza_Adi']) ?></h5>
@@ -331,7 +218,7 @@ try {
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Mesaj kutularını kapatma işlevi
+    // JavaScript kısmı aynı kalıyor
     document.addEventListener("DOMContentLoaded", function() {
         var closeBtns = document.querySelectorAll(".alert .btn-close");
         closeBtns.forEach(function(btn) {

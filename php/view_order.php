@@ -1,7 +1,15 @@
 <?php
-// sipariş görüntüleme sayfası (PDO ile güncellendi ve güvenlik eklendi)
+// view_order.php - Sipariş görüntüleme sayfası (PDO ile güncellendi ve güvenlik eklendi)
+
 session_start();
-include('../database.php'); // PDO bağlantısını kuran dosya
+
+// Yeni Database sınıfımızı projemize dahil ediyoruz.
+include_once '../database.php';
+
+// Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
+$db = Database::getInstance();
+$conn = $db->getConnection();
+
 
 // Sadece müşteri rolündeki kullanıcıların devam edebilmesini sağla
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'customer') {
@@ -18,6 +26,7 @@ if (isset($_GET['id'])) {
     
     if ($order_id) {
         try {
+            // Buradan sonraki kodlar aynı kalıyor, çünkü $conn değişkeni doğru şekilde alındı.
             // GÜVENLİK ADIMI: Müşterinin sadece kendi siparişini görebilmesi için
             // önce oturumdaki User_ID'den Musteri_ID'yi bulalım.
             $stmt_musteri = $conn->prepare("SELECT Musteri_ID FROM musteri WHERE User_ID = :user_id");
@@ -36,7 +45,6 @@ if (isset($_GET['id'])) {
                 
                 $order = $stmt->fetch(PDO::FETCH_ASSOC);
 
-                // Eğer sipariş bulunamazsa (veya başkasının siparişine bakmaya çalışıyorsa)
                 if (!$order) {
                     $error_message = "Sipariş bulunamadı veya bu siparişi görme yetkiniz yok.";
                 }
@@ -64,6 +72,7 @@ if (isset($_GET['id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sipariş Detayı</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Stil kodları değişmediği için aynı kalıyor -->
     <style>
         body { background-color: #f8f9fa; }
         .card { max-width: 700px; margin: 40px auto; }

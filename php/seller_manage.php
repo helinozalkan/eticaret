@@ -3,7 +3,14 @@
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
-include_once '../database.php'; // Veritabanı bağlantısı
+
+// Yeni Database sınıfımızı projemize dahil ediyoruz.
+include_once '../database.php';
+
+// Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
+$db = Database::getInstance();
+$conn = $db->getConnection();
+
 
 // Özel İstisna Sınıfı
 class SellerManageException extends Exception {}
@@ -19,7 +26,7 @@ define('PARAM_PASSWORD_SM', ':password');
 
 // Giriş yapmış kullanıcı bilgilerini kontrol et
 $logged_in = isset($_SESSION['user_id']);
-$username_session = $logged_in ? htmlspecialchars($_SESSION['username']) : null; // Session'daki kullanıcı adı
+$username_session = $logged_in ? htmlspecialchars($_SESSION['username']) : null;
 
 // Satıcı yetki kontrolü
 if (!$logged_in || !isset($_SESSION['role']) || $_SESSION['role'] !== 'seller') {
@@ -27,8 +34,8 @@ if (!$logged_in || !isset($_SESSION['role']) || $_SESSION['role'] !== 'seller') 
     exit();
 }
 
-$seller_user_id = $_SESSION['user_id']; // Bu, users.id'dir
-$satici_id = null; // Bu, Satici.Satici_ID'dir
+$seller_user_id = $_SESSION['user_id'];
+$satici_id = null;
 
 // Profil güncelleme mesajları için session değişkenlerini kontrol et ve temizle
 $profile_update_error = $_SESSION['profile_update_error'] ?? '';
@@ -187,7 +194,7 @@ $stats_message = '';
 
 if ($satici_id) {
     try {
-        $query_products = "SELECT Urun_ID, Urun_Adi, Urun_Fiyati, Stok_Adedi, Urun_Gorseli, Aktiflik_Durumu FROM Urun WHERE Satici_ID = " . PARAM_SATICI_ID_SM;
+        $query_products = "SELECT Aktiflik_Durumu FROM Urun WHERE Satici_ID = " . PARAM_SATICI_ID_SM;
         $stmt_products = $conn->prepare($query_products);
         $stmt_products->bindParam(PARAM_SATICI_ID_SM, $satici_id, PDO::PARAM_INT);
         $stmt_products->execute();
@@ -209,10 +216,11 @@ if ($satici_id) {
      $stats_message = "Satıcıya ait ürün bulunamadı veya satıcı profili henüz tamamlanmamış.";
 }
 
-$form_store_name = htmlspecialchars($new_store_name ?? $current_store_name);
-$form_store_address = htmlspecialchars($new_store_address ?? $current_store_address);
-$form_owner_name = htmlspecialchars($new_owner_name ?? $current_owner_name);
-$form_email = htmlspecialchars($new_email ?? $current_email);
+// Formun hata durumunda eski değerleri koruması için
+$form_store_name = htmlspecialchars($_POST['store_name'] ?? $current_store_name);
+$form_store_address = htmlspecialchars($_POST['store_address'] ?? $current_store_address);
+$form_owner_name = htmlspecialchars($_POST['owner_name'] ?? $current_owner_name);
+$form_email = htmlspecialchars($_POST['email'] ?? $current_email);
 
 ?>
 
@@ -224,135 +232,29 @@ $form_email = htmlspecialchars($new_email ?? $current_email);
     <title>Satıcı Mağaza Yönetimi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../css/css.css"> <!-- Ana CSS dosyanız -->
+    <link rel="stylesheet" href="../css/css.css">
     <style>
-        body {
-            font-family: 'Montserrat', sans-serif;
-            background-color: #f8f9fa; /* Bootstrap'in hafif gri arka planı */
-        }
-        .navbar-custom { /* Navbarda kullanılan renk navbar'a taşındı */
-             background-color: rgb(91, 140, 213);
-        }
-        .main-container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 12px; /* Daha yumuşak köşeler */
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08); /* Daha belirgin gölge */
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
-        .page-title {
-            font-family: 'Playfair Display', serif;
-            color: #2c3e50; /* Koyu mavi-gri */
-            text-align: center;
-            margin-bottom: 40px;
-            font-size: 2.5rem;
-            font-weight: 700;
-        }
-        .section-title {
-            font-family: 'Playfair Display', serif;
-            color: #34495e; /* Biraz daha açık mavi-gri */
-            text-align: center;
-            margin-top: 50px;
-            margin-bottom: 30px;
-            font-size: 2rem;
-            font-weight: 600;
-        }
-        .stat-card {
-            background: linear-gradient(145deg, #ffffff, #e6e9ed);
-            border: none;
-            border-radius: 10px;
-            padding: 25px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.07);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            height: 100%; /* Kartların aynı yükseklikte olmasını sağlar */
-        }
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-        .stat-card .card-header {
-            background-color: transparent;
-            border-bottom: 1px solid #dee2e6;
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #495057;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-        .stat-card .card-title {
-            font-size: 3rem;
-            font-weight: 700;
-            color: rgb(91, 140, 213); /* Ana renk */
-            margin-bottom: 10px;
-        }
-        .stat-card .card-text {
-            font-size: 0.95rem;
-            color: #6c757d;
-        }
-        .chart-container {
-            width: 100%;
-            max-width: 750px; /* Grafik için maksimum genişlik */
-            height: 400px; /* Grafik yüksekliği */
-            margin: 40px auto;
-            padding: 25px;
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.09);
-        }
-        .profile-form-section {
-            background-color: #fdfdff; /* Hafif kırık beyaz */
-            padding: 35px; /* Daha fazla iç boşluk */
-            border-radius: 10px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.09);
-        }
-        .form-label {
-            font-weight: 600;
-            color: #495057;
-            margin-bottom: 0.3rem;
-        }
-        .form-control {
-            border-radius: 6px;
-            border: 1px solid #ced4da;
-            padding: 0.6rem 0.9rem;
-        }
-        .form-control:focus {
-            border-color: rgb(91, 140, 213);
-            box-shadow: 0 0 0 0.2rem rgba(91, 140, 213, 0.25);
-        }
-        .btn-update-profile {
-            background-color: rgb(91, 140, 213);
-            border-color: rgb(91, 140, 213);
-            color: white;
-            padding: 0.7rem 1.5rem;
-            font-size: 1.05rem;
-            font-weight: 600;
-            border-radius: 6px;
-            transition: background-color 0.2s ease, border-color 0.2s ease;
-        }
-        .btn-update-profile:hover {
-            background-color: rgb(70, 120, 190);
-            border-color: rgb(70, 120, 190);
-        }
-        /* Mesaj kutuları */
-        .alert-custom {
-            border-left-width: 5px;
-            border-radius: 6px;
-            padding: 1rem 1.25rem;
-        }
-        .alert-danger-custom {
-            border-left-color: #dc3545; /* Bootstrap danger */
-        }
-        .alert-success-custom {
-            border-left-color: #198754; /* Bootstrap success */
-        }
-        .alert-info-custom {
-            border-left-color: #0dcaf0; /* Bootstrap info */
-        }
+        body { font-family: 'Montserrat', sans-serif; background-color: #f8f9fa; }
+        .navbar-custom { background-color: rgb(91, 140, 213); }
+        .main-container { background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08); margin-top: 20px; margin-bottom: 20px; }
+        .page-title { font-family: 'Playfair Display', serif; color: #2c3e50; text-align: center; margin-bottom: 40px; font-size: 2.5rem; font-weight: 700; }
+        .section-title { font-family: 'Playfair Display', serif; color: #34495e; text-align: center; margin-top: 50px; margin-bottom: 30px; font-size: 2rem; font-weight: 600; }
+        .stat-card { background: linear-gradient(145deg, #ffffff, #e6e9ed); border: none; border-radius: 10px; padding: 25px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.07); transition: transform 0.3s ease, box-shadow 0.3s ease; height: 100%; }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .stat-card .card-header { background-color: transparent; border-bottom: 1px solid #dee2e6; font-size: 1.1rem; font-weight: 600; color: #495057; padding-bottom: 10px; margin-bottom: 15px; }
+        .stat-card .card-title { font-size: 3rem; font-weight: 700; color: rgb(91, 140, 213); margin-bottom: 10px; }
+        .stat-card .card-text { font-size: 0.95rem; color: #6c757d; }
+        .chart-container { width: 100%; max-width: 750px; height: 400px; margin: 40px auto; padding: 25px; background-color: #fff; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.09); }
+        .profile-form-section { background-color: #fdfdff; padding: 35px; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.09); }
+        .form-label { font-weight: 600; color: #495057; margin-bottom: 0.3rem; }
+        .form-control { border-radius: 6px; border: 1px solid #ced4da; padding: 0.6rem 0.9rem; }
+        .form-control:focus { border-color: rgb(91, 140, 213); box-shadow: 0 0 0 0.2rem rgba(91, 140, 213, 0.25); }
+        .btn-update-profile { background-color: rgb(91, 140, 213); border-color: rgb(91, 140, 213); color: white; padding: 0.7rem 1.5rem; font-size: 1.05rem; font-weight: 600; border-radius: 6px; transition: background-color 0.2s ease, border-color 0.2s ease; }
+        .btn-update-profile:hover { background-color: rgb(70, 120, 190); border-color: rgb(70, 120, 190); }
+        .alert-custom { border-left-width: 5px; border-radius: 6px; padding: 1rem 1.25rem; }
+        .alert-danger-custom { border-left-color: #dc3545; }
+        .alert-success-custom { border-left-color: #198754; }
+        .alert-info-custom { border-left-color: #0dcaf0; }
     </style>
 </head>
 <body>
@@ -386,7 +288,6 @@ $form_email = htmlspecialchars($new_email ?? $current_email);
 <div class="container main-container">
     <h1 class="page-title">Mağaza ve Ürün Yönetimi</h1>
 
-    <!-- Ürün İstatistikleri Bölümü -->
     <section id="product-stats">
         <h2 class="section-title">Ürün İstatistikleri</h2>
         <?php if (!empty($stats_message)): ?>
@@ -398,28 +299,19 @@ $form_email = htmlspecialchars($new_email ?? $current_email);
             <div class="col-md-4">
                 <div class="stat-card">
                     <div class="card-header">Toplam Ürün</div>
-                    <div class="card-body">
-                        <h5 class="card-title"><?= $total_products ?></h5>
-                        <p class="card-text">Mağazanızdaki toplam ürün sayısı.</p>
-                    </div>
+                    <div class="card-body"><h5 class="card-title"><?= $total_products ?></h5><p class="card-text">Mağazanızdaki toplam ürün sayısı.</p></div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="stat-card">
                     <div class="card-header">Aktif Ürünler</div>
-                    <div class="card-body">
-                        <h5 class="card-title"><?= $active_products ?></h5>
-                        <p class="card-text">Şu anda satışta olan ürünler.</p>
-                    </div>
+                    <div class="card-body"><h5 class="card-title"><?= $active_products ?></h5><p class="card-text">Şu anda satışta olan ürünler.</p></div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="stat-card">
                     <div class="card-header">Pasif Ürünler</div>
-                    <div class="card-body">
-                        <h5 class="card-title"><?= $removed_products ?></h5>
-                        <p class="card-text">Satışta olmayan veya kaldırılmış ürünler.</p>
-                    </div>
+                    <div class="card-body"><h5 class="card-title"><?= $removed_products ?></h5><p class="card-text">Satışta olmayan veya kaldırılmış ürünler.</p></div>
                 </div>
             </div>
         </div>
@@ -433,7 +325,6 @@ $form_email = htmlspecialchars($new_email ?? $current_email);
 
     <hr class="my-5">
 
-    <!-- Mağaza Profili Yönetimi Bölümü -->
     <section id="profile-management">
         <div class="row justify-content-center">
             <div class="col-lg-10 col-md-12">
@@ -523,64 +414,24 @@ $form_email = htmlspecialchars($new_email ?? $current_email);
         <?php if ($total_products > 0 && $satici_id): ?>
         const ctx = document.getElementById('productChart').getContext('2d');
         const productChart = new Chart(ctx, {
-            type: 'doughnut', // Grafik tipi doughnut olarak değiştirildi
+            type: 'doughnut',
             data: {
                 labels: ['Aktif Ürünler', 'Pasif Ürünler'],
                 datasets: [{
                     label: 'Ürün Durumu',
                     data: [<?= $active_products ?>, <?= $removed_products ?>],
-                    backgroundColor: [
-                        'rgb(91, 140, 213)',  // Aktif için ana renk
-                        '#fd7e14' // Pasif için turuncu tonu (Bootstrap warning rengine yakın)
-                    ],
-                    borderColor: [
-                        '#ffffff',
-                        '#ffffff'
-                    ],
-                    borderWidth: 3, // Kenarlık kalınlığı
+                    backgroundColor: ['rgb(91, 140, 213)', '#fd7e14'],
+                    borderColor: ['#ffffff', '#ffffff'],
+                    borderWidth: 3,
                     hoverOffset: 4
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                animation: {
-                    animateScale: true,
-                    animateRotate: true
-                },
                 plugins: {
-                    title: {
-                        display: true,
-                        text: 'Mağaza Ürün Dağılımı',
-                        font: { size: 18, family: 'Playfair Display', weight: 'bold' },
-                        color: '#34495e',
-                        padding: {
-                            top: 10,
-                            bottom: 20
-                        }
-                    },
-                    legend: {
-                        position: 'bottom', // Legend alta alındı
-                        labels: {
-                            font: { size: 14, family: 'Montserrat' },
-                            color: '#495057',
-                            padding: 20
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed !== null) {
-                                    label += context.parsed + ' ürün';
-                                }
-                                return label;
-                            }
-                        }
-                    }
+                    title: { display: true, text: 'Mağaza Ürün Dağılımı', font: { size: 18, family: 'Playfair Display', weight: 'bold' }, color: '#34495e', padding: { top: 10, bottom: 20 } },
+                    legend: { position: 'bottom', labels: { font: { size: 14, family: 'Montserrat' }, color: '#495057', padding: 20 } },
                 }
             }
         });

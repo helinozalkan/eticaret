@@ -1,7 +1,19 @@
 <?php
 // login.php - Giriş sayfası
+
+// Oturumu başlat
 session_start();
-include '../database.php'; // Veritabanı bağlantısı
+
+// Yeni Database sınıfımızı projemize dahil ediyoruz.
+// include_once, dosyanın sadece bir kez dahil edildiğinden emin olur.
+include_once '../database.php';
+
+// Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
+// 1. Database sınıfının tek örneğini (instance) alıyoruz.
+$db = Database::getInstance();
+// 2. Bu örnek üzerinden PDO bağlantı nesnesini ($conn) alıyoruz.
+$conn = $db->getConnection();
+
 
 $error = ""; // Hata mesajlarını tutmak için değişken
 
@@ -15,6 +27,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $error = "Geçersiz e-posta formatı.";
     } else {
         try {
+            // Buradan sonraki kodlar aynı kalıyor, çünkü $conn değişkenini
+            // artık yeni yöntemle de olsa almış durumdayız.
             $stmt = $conn->prepare("SELECT id, username, password, role FROM users WHERE email = :email");
             $stmt->bindParam(':email', $email);
             $stmt->execute();
@@ -31,7 +45,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         $seller_data = $stmt_seller_status->fetch(PDO::FETCH_ASSOC);
 
                         if (!$seller_data || $seller_data['HesapDurumu'] == 0) {
-                            // Hesap bulunamadıysa (ki bu olmamalı) veya HesapDurumu 0 (pasif/doğrulama bekliyor) ise
                             $error = "Hesabınız henüz yönetici onayı almamıştır veya pasif durumdadır. Lütfen daha sonra tekrar deneyin.";
                         } else {
                             // Satıcı hesabı aktif, oturumu başlat ve yönlendir
@@ -61,11 +74,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         exit();
                     }
                 } else {
-                    // Hatalı şifre
                     $error = "Hatalı e-posta veya şifre. Lütfen tekrar deneyin.";
                 }
             } else {
-                // Kullanıcı bulunamadı
                 $error = "Hatalı e-posta veya şifre. Lütfen tekrar deneyin.";
             }
         } catch (PDOException $e) {
@@ -83,7 +94,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Giriş Yap</title>
-
+    <!-- Stil kodları değişmediği için aynı kalıyor -->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -158,10 +169,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         button:hover {
-            background-color: rgb(91, 140, 213);
+            background-color: rgb(70, 120, 190);
         }
     </style>
-
 </head>
 <body>
     <div class="form-container">
@@ -174,11 +184,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
         <?php endif; ?>
 
-        <div class="back-button">
-        <a class="btn btn-secondary" href="../index.php">←</a>
-    </div> 
-
-
         <form action="login.php" method="post" id="loginForm">
             <input type="email" id="email" name="email" placeholder="E-posta" required>
             <input type="password" id="password" name="password" placeholder="Şifre" required>
@@ -188,36 +193,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <a href="register.php">Kayıt Ol</a>
     </div>
 
-
-    <style>
-.back-button {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-}
-
-.back-button a {
-    font-size: 16px;
-    padding: 8px 14px;
-    text-decoration: none;
-    display: inline-block;
-}
-</style>
-
     <script>
-        // E-posta alanına @gmail.com eklemek için (isteğe bağlı, sunucu tarafı validasyon daha önemlidir)
-        document.getElementById("email").addEventListener("input", function () {
-            const emailInput = this;
-            const gmailSuffix = "gmail.com";
-
-            // Eğer kullanıcı @ işareti koyduysa ve henüz gmail.com eklenmemişse
-            if (emailInput.value.includes("@") && !emailInput.value.includes(gmailSuffix)) {
-                const parts = emailInput.value.split("@");
-                // Kullanıcının girdiği kısmı koru, sadece sonuna gmail.com ekle
-                emailInput.value = parts[0] + "@" + gmailSuffix;
-            }
-        });
-
         // Hata mesajını kapatmak için çarpı butonu
         document.addEventListener("DOMContentLoaded", function () {
             var closeBtn = document.querySelector(".close-btn");

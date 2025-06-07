@@ -1,27 +1,34 @@
 <?php
 session_start();
-include_once 'database.php'; // include_once kullanıldı
+
+// Yeni Database sınıfımızı projemize dahil ediyoruz.
+include_once 'database.php';
+
+// Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
+$db = Database::getInstance();
+$conn = $db->getConnection();
 
 // Giriş yapmış kullanıcı bilgilerini kontrol et
-$logged_in = isset($_SESSION['user_id']); // Kullanıcı giriş yapmış mı kontrol et
-$username = $logged_in ? htmlspecialchars($_SESSION['username']) : null; // Kullanıcı adını al ve temizle
+$logged_in = isset($_SESSION['user_id']);
+$username = $logged_in ? htmlspecialchars($_SESSION['username']) : null;
 
 // Aktif ürünleri veri tabanından çek
 $products = []; // Ürünleri tutacak dizi
 try {
-    $query = "SELECT Urun_ID, Urun_Adi, Urun_Fiyati, Stok_Adedi, Urun_Gorseli, Urun_Aciklamasi  FROM Urun WHERE Aktiflik_Durumu = 1";
+    // Buradan sonraki kodlar aynı kalıyor, çünkü $conn değişkeni doğru şekilde alındı.
+    $query = "SELECT Urun_ID, Urun_Adi, Urun_Fiyati, Stok_Adedi, Urun_Gorseli, Urun_Aciklamasi FROM Urun WHERE Aktiflik_Durumu = 1";
     $stmt = $conn->prepare($query);
     $stmt->execute();
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     error_log("index.php: Ürünler çekilirken veritabanı hatası: " . $e->getMessage());
-    // Hata durumunda ürün listesi boş kalır, kullanıcıya genel bir mesaj gösterilebilir.
+    // Hata durumunda ürün listesi boş kalır, kullanıcıya bir mesaj gösterilebilir.
 }
 ?>
 
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -118,16 +125,6 @@ try {
     </div>
     </div>
   </nav>
-
-
-
-
-
-
-
-
-
-
 
   <div class="container-fluid ">
     <div class="row  position-relative">
@@ -300,54 +297,50 @@ try {
   </div>
 
 
-  <div class="container bg-light mt-5">
-    <div class="row px-5">
-      <?php if (!empty($products)): ?>
-        <?php foreach ($products as $urun): ?>
-          <div class="col-6">
-            <div class="a container bg-white mb-3" style="border-radius: 5%;">
-              <div class="row mt-5 mb-5">
-                <div class="col-6 text-center">
-                  <img src="uploads/<?= htmlspecialchars($urun['Urun_Gorseli']) ?>" class="img-grow"
-                    style="border-radius:5%; height: 230px; width: 230px;">
-                </div>
-                <div class="col-6">
-                  <div class="baslik3 fw-bold" style="font-size: 21px;"><?= htmlspecialchars($urun['Urun_Adi']) ?></div>
-                  <div class="starts" style="color:rgb(91, 140, 213) ;">
-                    <i class="bi bi-star-fill"></i>
-                    <i class="bi bi-star-fill"></i>
-                    <i class="bi bi-star-fill"></i>
-                    <i class="bi bi-star-fill"></i>
-                    <i class="bi bi-star-fill"></i>
-                  </div>
-                  <div style="font-size: 15px;margin-top: 10px;">
-                    <?= htmlspecialchars($urun['Urun_Aciklamasi']) ?>
-                  </div>
-                  <div class="baslik3 fw-bold d-inline-block" style="font-size:30px;margin-top: 15px;">
-                    <?= htmlspecialchars($urun['Urun_Fiyati']) ?> TL
-                  </div>
-                  <?php if (!empty($urun['Indirimli_Fiyat'])): ?>
-                    <div class="baslik3 fw-bold d-inline-block"
-                      style="font-size:20px; color: rgb(182, 182, 182);text-decoration: line-through; margin-left: 10px;">
-                      <?= htmlspecialchars($urun['Indirimli_Fiyat']) ?> TL
+    <div class="container bg-light mt-5">
+        <div class="row px-5">
+          <?php if (!empty($products)): ?>
+            <?php foreach ($products as $urun): ?>
+              <div class="col-lg-6 mb-4">
+                <div class="a container bg-white h-100" style="border-radius: 5%;">
+                  <div class="row mt-5 mb-5 align-items-center">
+                    <div class="col-md-6 text-center">
+                      <!-- DÜZELTME: Ürün görseli bir <a> etiketi ile sarmalandı -->
+                      <a href="php/product_detail.php?id=<?= htmlspecialchars($urun['Urun_ID']) ?>">
+                        <img src="uploads/<?= htmlspecialchars($urun['Urun_Gorseli']) ?>" class="img-grow img-fluid"
+                          style="border-radius:5%; max-height: 230px; width: auto; object-fit: cover;" alt="<?= htmlspecialchars($urun['Urun_Adi']) ?>">
+                      </a>
                     </div>
-                  <?php endif; ?>
-                  <div>
-                  <form action="php/add_to_cart.php" method="POST">
-      <input type="hidden" name="urun_id" value="<?= $urun['Urun_ID'] ?>">
-      <input type="hidden" name="boyut" value="1"> <input type="hidden" name="miktar" value="1"> <button type="submit" class="btn ms-2 text-white" style="background-color:rgb(155, 10, 109) ;border-radius: 20; height: 40px; width: 120px;margin-top: 13px;">Sepete Ekle</button>
-       </form>
+                    <div class="col-md-6">
+                      <!-- DÜZELTME: Ürün adı da tıklanabilir hale getirildi -->
+                      <h3 class="baslik3 fw-bold fs-5 mt-3 mt-md-0">
+                        <a href="php/product_detail.php?id=<?= htmlspecialchars($urun['Urun_ID']) ?>" class="text-dark text-decoration-none">
+                            <?= htmlspecialchars($urun['Urun_Adi']) ?>
+                        </a>
+                      </h3>
+                      <div class="starts" style="color:rgb(91, 140, 213) ;">
+                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                      </div>
+                      <p style="font-size: 14px; margin-top: 10px;"><?= htmlspecialchars($urun['Urun_Aciklamasi']) ?></p>
+                      <div class="baslik3 fw-bold d-inline-block fs-4 mt-2"><?= htmlspecialchars($urun['Urun_Fiyati']) ?> TL</div>
+                      <div>
+                        <form action="php/add_to_cart.php" method="POST" class="mt-2">
+                          <input type="hidden" name="urun_id" value="<?= $urun['Urun_ID'] ?>">
+                          <input type="hidden" name="boyut" value="1">
+                          <input type="hidden" name="miktar" value="1">
+                          <button type="submit" class="btn text-white" style="background-color:rgb(91, 140, 213); border-radius: 20px;">Sepete Ekle</button>
+                        </form>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-<?php endforeach; ?>
-      <?php else: ?>
-        <p class="text-center">Şu anda sepetinizde ürün bulunmamaktadır.</p>
-      <?php endif; ?>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <p class="text-center">Şu anda gösterilecek ürün bulunmamaktadır.</p>
+          <?php endif; ?>
+        </div>
     </div>
-  </div>
   <div class="container-fluid mt-5 bg-light">
   <div class="row">
     <div class="col-12 col-md-6">
@@ -745,12 +738,12 @@ try {
   </script>
   <script>
     let valueDisplays = document.querySelectorAll(".num");
-    let interval = 1000;
+    let animationInterval = 1000;
 
     let startCounter = (valueDisplay) => {
       let startValue = 0;
       let endValue = parseInt(valueDisplay.getAttribute("data-value"));
-      let duration = Math.floor(interval / endValue);
+      let duration = Math.floor(animationInterval / endValue);
       let counter = setInterval(function () {
         startValue += 1;
         valueDisplay.textContent = startValue;

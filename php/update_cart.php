@@ -4,18 +4,30 @@
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
-include_once '../database.php'; // Veritabanı bağlantısı
+
+// Yeni Database sınıfımızı projemize dahil ediyoruz.
+include_once '../database.php';
+
+// Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
+$db = Database::getInstance();
+$conn = $db->getConnection();
+
+// *** İYİLEŞTİRME: Tekrar eden metinler için sabit ve değişkenler tanımlıyoruz. ***
+define('HTTP_HEADER_LOCATION', 'Location: ');
+$cart_page = 'my_cart.php';
+
 
 // 1. Kullanıcı Giriş Kontrolü
 if (!isset($_SESSION['user_id'])) {
-    // API tarzı bir yanıt döndürmek daha iyi olabilir ama şimdilik yönlendirme yapalım.
-    header("Location: login.php?status=not_logged_in");
+    // Bu bir arka plan scripti olduğu için genellikle JSON yanıtı döndürmek daha iyidir,
+    // ancak mevcut yapıda yönlendirme kullanılıyor.
+    header(HTTP_HEADER_LOCATION . "login.php?status=not_logged_in");
     exit();
 }
 
 // 2. Sadece POST isteklerini kabul et
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: my_cart.php?status=invalid_request");
+    header(HTTP_HEADER_LOCATION . $cart_page . "?status=invalid_request");
     exit();
 }
 
@@ -24,11 +36,12 @@ $sepet_id = filter_input(INPUT_POST, 'sepet_id', FILTER_VALIDATE_INT);
 $action = filter_input(INPUT_POST, 'action', FILTER_SANITIZE_STRING);
 
 if (!$sepet_id || !$action) {
-    header("Location: my_cart.php?status=missing_data");
+    header(HTTP_HEADER_LOCATION . $cart_page . "?status=missing_data");
     exit();
 }
 
 try {
+    // Buradan sonraki kodlar aynı kalıyor, çünkü $conn değişkeni doğru şekilde alındı.
     // 4. Müşteri ID'sini al (güvenlik için: kullanıcı sadece kendi sepetini güncelleyebilmeli)
     $stmt_musteri = $conn->prepare("SELECT Musteri_ID FROM musteri WHERE User_ID = :user_id");
     $stmt_musteri->bindParam(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);
@@ -78,7 +91,5 @@ try {
 }
 
 // 6. İşlem sonrası sepet sayfasına geri yönlendir
-header("Location: my_cart.php");
+header(HTTP_HEADER_LOCATION . $cart_page);
 exit();
-
-?>

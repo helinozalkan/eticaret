@@ -1,14 +1,21 @@
 <?php
 // delete_user.php - Kullanıcı silme işlemi
+
 session_start(); // Oturumu başlat
-include_once '../database.php'; // Veritabanı bağlantısını dahil et (PDO bağlantısı kurduğunu varsayıyoruz)
+
+// Yeni Database sınıfımızı projemize dahil ediyoruz.
+include_once '../database.php';
+
+// Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
+$db = Database::getInstance();
+$conn = $db->getConnection();
+
 
 // Özel istisna sınıfı tanımla
 class UserDeletionException extends Exception {}
 
 // Admin yetki kontrolü
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    // Eğer admin giriş yapmamışsa veya yetkisi yoksa, giriş sayfasına yönlendir
     header("Location: login.php?status=unauthorized");
     exit();
 }
@@ -29,7 +36,7 @@ if ($user_id_to_delete == $_SESSION['user_id']) {
     exit();
 }
 
-// SonarQube S1192 hatasını gidermek için parametre adı sabitini tanımla
+// Parametre adı için bir sabit tanımlıyoruz.
 $param_user_id = ':user_id';
 
 try {
@@ -37,6 +44,7 @@ try {
     $conn->beginTransaction();
 
     // Silinecek kullanıcının rolünü kontrol et
+    // Buradan sonraki kodlar aynı kalıyor, çünkü $conn değişkeni doğru şekilde alındı.
     $stmt_get_role = $conn->prepare("SELECT role FROM users WHERE id = " . $param_user_id);
     $stmt_get_role->bindParam($param_user_id, $user_id_to_delete, PDO::PARAM_INT);
     $stmt_get_role->execute();
@@ -50,9 +58,6 @@ try {
                 $stmt_delete_customer->execute();
                 break;
             case 'seller':
-                // Satıcıya ait ürünleri de silmek gerekebilir (veya ürünleri başka bir satıcıya aktarmak)
-                // Eğer veritabanı şemanızda CASCADE DELETE ayarı yoksa, ilgili ürünleri de silmeniz gerekebilir.
-                // Örn: DELETE FROM Urun WHERE Satici_ID IN (SELECT Satici_ID FROM satici WHERE User_ID = :user_id);
                 $stmt_delete_seller = $conn->prepare("DELETE FROM satici WHERE User_ID = " . $param_user_id);
                 $stmt_delete_seller->bindParam($param_user_id, $user_id_to_delete, PDO::PARAM_INT);
                 $stmt_delete_seller->execute();
@@ -62,8 +67,6 @@ try {
                 $stmt_delete_admin->bindParam($param_user_id, $user_id_to_delete, PDO::PARAM_INT);
                 $stmt_delete_admin->execute();
                 break;
-            default :
-            
         }
     }
 
@@ -73,29 +76,25 @@ try {
 
     if ($stmt_delete_user->execute()) {
         $conn->commit(); // Tüm işlemler başarılıysa commit et
-        header("Location: admin_user.php?status=user_deleted"); // Başarılı silme sonrası yönlendir
+        // Başarılı silme sonrası yönlendirme yaparken session'a bir mesaj bırakabiliriz.
+        $_SESSION['user_action_success'] = "Kullanıcı (ID: " . htmlspecialchars($user_id_to_delete) . ") başarıyla silindi.";
+        header("Location: admin_user.php");
         exit();
     } else {
         $conn->rollBack(); // Hata oluşursa geri al
-        error_log("delete_user.php: Kullanıcı silinirken hiçbir satır etkilenmedi. User ID: " . $user_id_to_delete);
-        // Özel istisna fırlat
         throw new UserDeletionException("Kullanıcı silinemedi veya bulunamadı.");
     }
 
-} catch (UserDeletionException $e) { // Özel istisnayı yakala
-    $conn->rollBack(); // İşlemi geri al
-    error_log("delete_user.php: Kullanıcı Silme Hatası: " . $e->getMessage());
-    header("Location: admin_user.php?status=delete_failed");
+} catch (UserDeletionException $e) {
+    if($conn->inTransaction()) $conn->rollBack();
+    $_SESSION['user_action_error'] = $e->getMessage();
+    header("Location: admin_user.php");
     exit();
-} catch (PDOException $e) { // PDO istisnasını yakala
-    $conn->rollBack(); // PDO hatası durumunda işlemi geri al
+} catch (PDOException $e) {
+    if($conn->inTransaction()) $conn->rollBack();
     error_log("delete_user.php: Veritabanı hatası: " . $e->getMessage());
-    header("Location: admin_user.php?status=db_error");
-    exit();
-} catch (Exception $e) { // Diğer genel istisnaları yakala
-    $conn->rollBack(); // Genel hata durumunda işlemi geri al
-    error_log("delete_user.php: Beklenmedik Hata: " . $e->getMessage());
-    header("Location: admin_user.php?status=unexpected_error");
+    $_SESSION['user_action_error'] = "Kullanıcı silinirken bir veritabanı hatası oluştu.";
+    header("Location: admin_user.php");
     exit();
 }
 

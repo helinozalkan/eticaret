@@ -2,15 +2,23 @@
 // add_to_favorites.php - Ürünü favorilere ekleme script'i
 
 session_start();
-include_once '../database.php'; // Veritabanı bağlantısı
+
+// Yeni Database sınıfımızı projemize dahil ediyoruz.
+include_once '../database.php';
+
+// Veritabanı bağlantısını Singleton deseni üzerinden alıyoruz.
+$db = Database::getInstance();
+$conn = $db->getConnection();
+
+// *** İYİLEŞTİRME: Tekrar eden metinler için sabit ve değişkenler tanımlıyoruz. ***
+define('HTTP_HEADER_LOCATION', 'Location: ');
 
 // Kullanıcı giriş yapmış mı kontrol et
 if (!isset($_SESSION['user_id'])) {
     $_SESSION['error_message'] = "Ürünü favorilere eklemek için lütfen giriş yapın.";
     // Giriş yapmamışsa, geldiği sayfaya (veya ürün detayına) yönlendir.
-    // Eğer product_id varsa, onu da yönlendirme linkine ekleyebiliriz.
     $redirect_url = isset($_POST['product_id']) ? "product_detail.php?id=" . htmlspecialchars($_POST['product_id']) : "../index.php";
-    header("Location: login.php?redirect=" . urlencode($redirect_url));
+    header(HTTP_HEADER_LOCATION . "login.php?redirect=" . urlencode($redirect_url));
     exit;
 }
 
@@ -22,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
 
     if ($product_id_to_add > 0) {
         try {
+            // Buradan sonraki kodlar aynı kalıyor, çünkü $conn değişkeni doğru şekilde alındı.
             // 1. Ürünün favorilerde olup olmadığını kontrol et
             $stmt_check = $conn->prepare("SELECT Favori_ID FROM Favoriler WHERE Kullanici_ID = :kullanici_id AND Urun_ID = :urun_id");
             $stmt_check->bindParam(':kullanici_id', $current_user_id, PDO::PARAM_INT);
@@ -33,7 +42,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
                 $_SESSION['info_message'] = "Bu ürün zaten favorilerinizde.";
             } else {
                 // 2. Ürünü favorilere ekle
-                // Favoriler tablonuzdaki sütun adlarının doğru olduğundan emin olun.
                 $stmt_add = $conn->prepare("INSERT INTO Favoriler (Kullanici_ID, Urun_ID) VALUES (:kullanici_id, :urun_id)");
                 $stmt_add->bindParam(':kullanici_id', $current_user_id, PDO::PARAM_INT);
                 $stmt_add->bindParam(':urun_id', $product_id_to_add, PDO::PARAM_INT);
@@ -57,7 +65,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
 }
 
 // Kullanıcıyı favoriler sayfasına veya ürünün geldiği sayfaya geri yönlendir
-// Genellikle favoriler sayfasına yönlendirmek daha iyi bir kullanıcı deneyimi sunar.
-header("Location: favourite.php");
+header(HTTP_HEADER_LOCATION . "favourite.php");
 exit;
-?>
