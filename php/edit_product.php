@@ -9,7 +9,6 @@ include_once '../database.php';
 $db = Database::getInstance();
 $conn = $db->getConnection();
 
-// *** İYİLEŞTİRME: Tekrar eden metinler için sabit ve değişkenler tanımlıyoruz. ***
 define('HTTP_HEADER_LOCATION', 'Location: ');
 $redirect_page = 'manage_product.php';
 
@@ -20,7 +19,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'seller') {
 }
 
 $seller_user_id = $_SESSION['user_id'];
-// DÜZELTME: Bu değişkenlerin tanımlandığından emin oluyoruz.
 $logged_in = isset($_SESSION['user_id']); 
 $username_session = $_SESSION['username'] ?? 'Satıcı';
 
@@ -59,7 +57,94 @@ if ($product_id_to_edit === false || $product_id_to_edit <= 0) {
     exit();
 }
 
-// Ürün bilgilerini çekme
+// *** Form POST edildiğinde güncelleme işlemi ***
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_product_action'])) {
+    
+    // Formdan gelen verileri al
+    $new_product_name = trim(htmlspecialchars($_POST['product_name'] ?? ''));
+    $new_product_price = filter_input(INPUT_POST, 'product_price', FILTER_VALIDATE_FLOAT);
+    $new_product_stock = filter_input(INPUT_POST, 'product_stock', FILTER_VALIDATE_INT);
+    $new_product_active = isset($_POST['product_status']) ? 1 : 0;
+    $new_product_description = trim(htmlspecialchars($_POST['product_description'] ?? ''));
+    $new_product_story = trim(htmlspecialchars($_POST['product_story'] ?? ''));
+
+    // Validasyon
+    if (empty($new_product_name) || $new_product_price === false || $new_product_price < 0 || $new_product_stock === false || $new_product_stock < 0) {
+        $error_message = "Lütfen tüm zorunlu alanları doldurun ve geçerli değerler girin.";
+    } elseif (mb_strlen($new_product_description) > 250) {
+        $error_message = "Ürün açıklaması en fazla 250 karakter olabilir.";
+    } else {
+        try {
+            // Önce mevcut görseli al, yeni görsel yüklenmezse bu kullanılacak.
+            $stmt_current_image = $conn->prepare("SELECT Urun_Gorseli FROM Urun WHERE Urun_ID = :product_id AND Satici_ID = :satici_id");
+            $stmt_current_image->bindParam(':product_id', $product_id_to_edit, PDO::PARAM_INT);
+            $stmt_current_image->bindParam(':satici_id', $satici_id, PDO::PARAM_INT);
+            $stmt_current_image->execute();
+            $current_image_filename = $stmt_current_image->fetchColumn();
+
+            // Yeni görsel yüklendiyse, eskisini sil ve yeni adı ata
+            if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
+                $upload_dir = '../uploads/';
+                // (Buraya dosya tipi, boyutu vb. için daha detaylı kontroller eklenebilir)
+                $file_tmp_path = $_FILES['product_image']['tmp_name'];
+                $file_ext = strtolower(pathinfo($_FILES['product_image']['name'], PATHINFO_EXTENSION));
+                $new_image_name = bin2hex(random_bytes(16)) . '.' . $file_ext;
+
+                if (move_uploaded_file($file_tmp_path, $upload_dir . $new_image_name)) {
+                    // Yeni dosya başarıyla yüklendiyse, eski dosyayı sil (eğer varsa)
+                    if ($current_image_filename && file_exists($upload_dir . $current_image_filename)) {
+                        unlink($upload_dir . $current_image_filename);
+                    }
+                    $current_image_filename = $new_image_name; // Veritabanına kaydedilecek dosya adı güncellendi.
+                } else {
+                    $error_message = "Yeni görsel yüklenirken bir hata oluştu.";
+                }
+            }
+
+            // Hata yoksa veritabanını güncelle
+            if (empty($error_message)) {
+                $conn->beginTransaction();
+                $update_query = "UPDATE Urun SET 
+                                    Urun_Adi = :product_name, 
+                                    Urun_Fiyati = :product_price, 
+                                    Stok_Adedi = :product_stock, 
+                                    Urun_Gorseli = :product_image, 
+                                    Urun_Aciklamasi = :product_description, 
+                                    Aktiflik_Durumu = :product_active,
+                                    Urun_Hikayesi = :product_story
+                                 WHERE Urun_ID = :product_id AND Satici_ID = :satici_id";
+                $update_stmt = $conn->prepare($update_query);
+
+                $update_stmt->bindParam(':product_name', $new_product_name);
+                $update_stmt->bindParam(':product_price', $new_product_price);
+                $update_stmt->bindParam(':product_stock', $new_product_stock, PDO::PARAM_INT);
+                $update_stmt->bindParam(':product_image', $current_image_filename);
+                $update_stmt->bindParam(':product_description', $new_product_description);
+                $update_stmt->bindParam(':product_active', $new_product_active, PDO::PARAM_INT);
+                $update_stmt->bindParam(':product_story', $new_product_story);
+                $update_stmt->bindParam(':product_id', $product_id_to_edit, PDO::PARAM_INT);
+                $update_stmt->bindParam(':satici_id', $satici_id, PDO::PARAM_INT);
+
+                if ($update_stmt->execute()) {
+                    $conn->commit();
+                    $_SESSION['form_success_message'] = "Ürün başarıyla güncellendi!";
+                    header(HTTP_HEADER_LOCATION . $redirect_page . "?status=product_updated&id=" . $product_id_to_edit);
+                    exit();
+                } else {
+                    $conn->rollBack();
+                    $error_message = "Ürün güncellenirken bir veritabanı hatası oluştu.";
+                }
+            }
+        } catch(PDOException $e) {
+            if ($conn->inTransaction()) $conn->rollBack();
+            error_log("edit_product.php: Güncelleme hatası: " . $e->getMessage());
+            $error_message = "Ürün güncellenirken bir veritabanı hatası oluştu.";
+        }
+    }
+}
+
+
+// Formun gösterilmesi için ürün bilgilerini çekme
 try {
     $query_product = "SELECT Urun_ID, Urun_Adi, Urun_Fiyati, Stok_Adedi, Urun_Gorseli, Urun_Aciklamasi, Aktiflik_Durumu, Urun_Hikayesi FROM Urun WHERE Urun_ID = :product_id AND Satici_ID = :satici_id";
     $stmt_product = $conn->prepare($query_product);
@@ -79,11 +164,6 @@ try {
     header(HTTP_HEADER_LOCATION . $redirect_page);
     exit();
 }
-
-// Form POST edildiğinde güncelleme işlemi
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_product_action'])) {
-    // ... form işleme mantığı (bu blok aynı kalıyor) ...
-}
 ?>
 
 <!DOCTYPE html>
@@ -101,14 +181,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_product_action
         .edit-form-container { max-width: 700px; margin: 2rem auto; background-color: #ffffff; padding: 35px; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08); }
         .page-title { font-family: 'Playfair Display', serif; color: #2c3e50; text-align: center; margin-bottom: 30px; font-size: 2.2rem; font-weight: 700; }
         .form-label { font-weight: 600; color: #495057; }
+        .form-control, .form-select { border-radius: 6px; border: 1px solid #ced4da; padding: 0.55rem 0.9rem; font-size: 0.95rem; }
         .form-control:focus, .form-select:focus { border-color: rgb(91, 140, 213); box-shadow: 0 0 0 0.2rem rgba(91, 140, 213, 0.25); }
+        .form-check-input:checked { background-color: rgb(91, 140, 213); border-color: rgb(91, 140, 213); }
+        .form-switch .form-check-input { width: 2.5em; height: 1.25em; margin-top: 0.25em; }
+        .form-switch .form-check-label { padding-left: 0.5em; font-size: 1rem; }
         .btn-update-product { background-color: rgb(91, 140, 213); border-color: rgb(91, 140, 213); color: white; }
         .btn-update-product:hover { background-color: rgb(70, 120, 190); border-color: rgb(70, 120, 190); }
         .current-image-preview { max-width: 150px; height: auto; border-radius: 6px; border: 1px solid #dee2e6; margin-top: 10px; }
     </style>
 </head>
 <body>
-<!-- *** DÜZELTME: Eksik olan navigasyon menüsü eklendi *** -->
 <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
     <div class="container-fluid">
         <a class="navbar-brand d-flex ms-4" href="../index.php">
@@ -147,7 +230,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_product_action
             </div>
         <?php endif; ?>
 
-        <!-- *** DÜZELTME: Form sadece ürün bilgileri başarıyla çekildiyse gösterilir *** -->
         <?php if ($product): ?>
         <form action="edit_product.php?id=<?php echo htmlspecialchars($product_id_to_edit); ?>" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
             <input type="hidden" name="update_product_action" value="1">
@@ -165,8 +247,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_product_action
                     <input type="number" class="form-control" id="product_stock" name="product_stock" value="<?= htmlspecialchars($product['Stok_Adedi'] ?? '') ?>" required min="0">
                 </div>
                 <div class="col-md-12 mb-3">
-                    <label for="product_description" class="form-label">Açıklama:</label>
-                    <textarea class="form-control" id="product_description" name="product_description" rows="3"><?= htmlspecialchars($product['Urun_Aciklamasi'] ?? '') ?></textarea>
+                    <label for="product_description" class="form-label">Açıklama (En fazla 250 karakter):</label>
+                    <textarea class="form-control" id="product_description" name="product_description" rows="3" maxlength="250"><?= htmlspecialchars($product['Urun_Aciklamasi'] ?? '') ?></textarea>
+                    <div id="charCountDescription" class="form-text text-end">0 / 250</div>
                 </div>
                 <div class="col-md-12 mb-3">
                     <label for="product_story" class="form-label">Ürün Hikayesi:</label>
@@ -184,7 +267,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_product_action
                 </div>
                 <div class="col-md-12 mb-3">
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" role="switch" id="product_status" name="product_status" <?= ($product['Aktiflik_Durumu'] == 1) ? 'checked' : '' ?>>
+                        <input class="form-check-input" type="checkbox" role="switch" id="product_status" name="product_status" <?= (isset($product['Aktiflik_Durumu']) && $product['Aktiflik_Durumu'] == 1) ? 'checked' : '' ?>>
                         <label class="form-check-label" for="product_status">Ürün Satışta (Aktif)</label>
                     </div>
                 </div>
@@ -202,5 +285,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_product_action
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // ... (Karakter sayacı ve mesaj kapatma scriptleri)
+        const descriptionTextarea = document.getElementById('product_description');
+        const charCountDescription = document.getElementById('charCountDescription');
+        if (descriptionTextarea && charCountDescription) {
+            function updateCharCount() {
+                const currentLength = descriptionTextarea.value.length;
+                const maxLength = descriptionTextarea.maxLength;
+                charCountDescription.textContent = currentLength + ' / ' + maxLength;
+            }
+            descriptionTextarea.addEventListener('input', updateCharCount);
+            updateCharCount(); // Sayfa yüklendiğinde de çalıştır
+        }
+    });
+</script>
 </body>
 </html>
