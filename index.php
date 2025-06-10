@@ -77,7 +77,7 @@ try {
     <div class="container-fluid">
 
       <a class="navbar-brand d-flex ms-4" href="#" style="margin-left: 5px;">
-        <img src="images/ana_logo.png" alt="Logo" width="40" height="40" class="align-text-top">
+        <img src="images/logo.png" alt="Logo" width="40" height="40" class="align-text-top">
 
         <div class="baslik fs-3">
           <a class="dropdown-item" href="index.php">
@@ -149,7 +149,7 @@ try {
       <div class="position-absolute top-50  start-50 translate-middle w-50" style="margin-top: -70px;">
         <div class="text-center">
           <div class="text-center fw-bold mb-3" style="color: black; font-size: 1vw;">DÜŞLE, İNAN , BAŞAR</div>
-          <div class="baslik2" style="color: black; font-size: 4vw;">El İşçiliğiyle Üretilmiş, Emeğe Saygı Duyanların Tercihi</div>
+          <div class="baslik2" style="color: white; font-size: 4vw;">El İşçiliğiyle Üretilmiş, Emeğe Saygı Duyanların Tercihi</div>
           
         </div>
       </div>
@@ -302,10 +302,10 @@ try {
 <div class="container-fluid  mt-5">
     <div class="text-center">
       <div style="color:rgb(91, 140, 213) ;">
-        Popüler Olan Ürünlerimiz
+        Ürünler
       </div>
       <div class="baslik3 " style="font-size: 50px;">
-        Sepetinizdeki Ürünler
+        Popüler Olan Ürünlerimiz
       </div>
     </div>
   </div>
@@ -381,12 +381,10 @@ try {
         </div>
 
         <div class="col-6 d-flex align-items-center mb-5 mt-0">
-          <img src="images/zey.jpeg" alt="Ünlü Kadın"style="border-radius: 50%; height: 70px; width: 70px; margin-left: 10px;">
+          <img src="images/zeynep.jpeg" alt="Ünlü Kadın"style="border-radius: 50%; height: 70px; width: 70px; margin-left: 10px;">
           <div class="ms-3">
-
             <div>Zeynep Nuriye Tekin</div>
-
-            <div style="color: rgb(105, 101, 101); font-weight: bold; font-size: 12px;">Eticaret Ekibi Lideri</div>
+            <div style="color: rgb(105, 101, 101); font-weight: bold; font-size: 12px;">Eticaret CEO & Kurucu</div>
           </div>
         </div>
       </div>
@@ -454,7 +452,7 @@ try {
 <div class="container-fluid  mt-5">
     <div class="text-center">
       <div style="color:rgb(91, 140, 213) ;">
-        Emekçi Kadınlarımız
+        Yazılım Ekibimiz
       </div>
       <div class="baslik3 " style="font-size: 50px;">
         Yılın Girişimcileri
@@ -464,15 +462,17 @@ try {
 
   <div class=" container ">
     <div class="row bg-light px-5 ">
-      <div class="col-4 mt-4 ">
+      
+    
+    <div class="col-4 mt-4 ">
         <div class=" b bg-light rounded-4 bg-white " style=" height: 410px; width: 350px;">
-          <img src="images/evhanimi.jpeg" class="img-b rounded-top-4" style="height: 300px; width: 350px; object-fit: cover; object-position: top;">
+          <img src="images/beyza2.jpeg" class="img-b rounded-top-4" style="height: 300px; width: 350px; object-fit: cover; object-position: top;">
 
           <div class="baslik3 text-center fs-4 fw-bold mt-3">
-            Ayşe Türkmen
+            Beyzanur Bayır
           </div>
           <div class="text-center" style="font-size: 13px; color:rgb(91, 140, 213) ;">
-            Ev Hanımı, Muğla
+            CRM & Analytics Solutions Director, Ankara
           </div>
           <div class="text-center mt-2" style="color:rgb(91, 140, 213) ;">
             <i class="bi bi-facebook  mx-2"></i>
@@ -481,15 +481,16 @@ try {
           </div>
         </div>
       </div>
+
       <div class="col-4 mt-4 ">
         <div class=" b bg-light rounded-4 bg-white" style=" height: 410px; width: 350px;">
-         <img src="images/zey.jpeg" class="img-b rounded-top-4" style="height: 300px; width: 350px; object-fit: cover; object-position: top;">
+         <img src="images/ahsen.jpeg" class="img-b rounded-top-4" style="height: 300px; width: 350px; object-fit: cover; object-position: top;">
 
           <div class="baslik3 text-center fs-4 fw-bold mt-3">
-            Zeynep Nuriye Tekin
+            Ahsen Berra Özdoğan
           </div>
           <div class="text-center" style="font-size: 13px; color:rgb(91, 140, 213) ;">
-            Yazılım Mühendisi, Bilecik
+            Principal Innovation Engineer, Bursa
           </div>
           <div class="text-center mt-2 " style="color:rgb(91, 140, 213) ;">
             <i class="bi bi-facebook  mx-2"></i>
@@ -498,16 +499,15 @@ try {
           </div>
         </div>
       </div>
+
       <div class="col-4 mt-4 mb-5">
         <div class=" b bg-light rounded-4 bg-white" style=" height: 410px; width: 350px;">
-          <img src="images/takitasarimcisi.jpeg" class="img-b rounded-top-4" style="height: 300px; width: 350px; object-fit: cover; object-position: top;">
-
-
+          <img src="images/helin2.jpeg" class="img-b rounded-top-4" style="height: 300px; width: 350px; object-fit: cover; object-position: top;">
           <div class="baslik3 text-center fs-4 fw-bold mt-3">
-            Seher Yılmaz
+            Helin Özalkan
           </div>
           <div class="text-center" style="font-size: 13px; color:rgb(91, 140, 213) ;">
-            Takı Tasarımcısı, Burdur
+           Cybernetic Systems Engineer, Adıyaman
           </div>
           <div class="text-center mt-2" style="color:rgb(91, 140, 213) ;">
             <i class="bi bi-facebook  mx-2"></i>
@@ -516,6 +516,44 @@ try {
           </div>
         </div>
       </div>
+
+      <div class="col-4 mt-4 mb-5">
+        <div class=" b bg-light rounded-4 bg-white" style=" height: 410px; width: 350px;">
+          <img src="images/salih.jpeg" class="img-b rounded-top-4" style="height: 300px; width: 350px; object-fit: cover; object-position: top;">
+          <div class="baslik3 text-center fs-4 fw-bold mt-3">
+            Salih Kerem Gündoğan
+          </div>
+          <div class="text-center" style="font-size: 13px; color:rgb(91, 140, 213) ;">
+            Chief Code Officer, Bolu
+          </div>
+          <div class="text-center mt-2" style="color:rgb(91, 140, 213) ;">
+            <i class="bi bi-facebook  mx-2"></i>
+            <i class="bi bi-linkedin mx-2"></i>
+            <i class="bi bi-instagram mx-2"></i>
+          </div>
+        </div>
+      </div>
+
+            <div class="col-4 mt-4 mb-5">
+        <div class=" b bg-light rounded-4 bg-white" style=" height: 410px; width: 350px;">
+          <img src="images/zeynep.jpeg" class="img-b rounded-top-4" style="height: 300px; width: 350px; object-fit: cover; object-position: top;">
+          <div class="baslik3 text-center fs-4 fw-bold mt-3">
+            Zeynep Nuriye Tekin
+          </div>
+          <div class="text-center" style="font-size: 13px; color:rgb(91, 140, 213) ;">
+            Quantum Systems Developer, Bolu
+          </div>
+          <div class="text-center mt-2" style="color:rgb(91, 140, 213) ;">
+            <i class="bi bi-facebook  mx-2"></i>
+            <i class="bi bi-linkedin mx-2"></i>
+            <i class="bi bi-instagram mx-2"></i>
+          </div>
+        </div>
+      </div>
+
+      
+
+
     </div>
   </div>
   <div class="container text-center">
@@ -605,7 +643,7 @@ try {
 </div>
 <div class="container-fluid text-white p-0 mt-5" style="width: 100%;">
   <div class="row p-0 position-relative">
-    <img src="images/62.png" class="img-fluid w-100 position-absolute"
+    <img src="images/çini.png" class="img-fluid w-100 position-absolute"
   style="top: 0; left: 0; z-index: -1; height: 100%; object-fit: cover; bottom: 0;">
 
 
@@ -613,6 +651,15 @@ try {
       style="z-index: 2; background-color: rgba(0, 0, 0, 0.6); padding: 40px 5%; margin-top: 20px;">
 
       <div class="row">
+                <div class="col-lg-3 mb-4">
+          <div class="rounded-4 text-center p-4 shadow-sm"
+            style="background: linear-gradient(135deg, rgba(212, 28, 28, 0.3), rgba(255,255,255,0.15)); backdrop-filter: blur(10px);">
+            <img class="rounded-4 mb-3 shadow" src="images/logo.png" alt="El Yapımı Kurabiye"
+              style="width: 80%; height: auto; object-fit: cover;">
+          </div>
+        </div>
+
+
         <div class="col-lg-3 mb-4">
           <h4>Ürünler</h4>
           <p>Seramik ve Çini</p>
@@ -636,28 +683,6 @@ try {
           <p>Ürünlerimiz</p>
           <p>İletişim</p>
           <p>Başarı Hikayeleri</p>
-        </div>
-
-        <div class="col-lg-3 mb-4">
-          <div class="rounded-4 text-center p-4 shadow-sm"
-            style="background: linear-gradient(135deg, rgba(212, 28, 28, 0.3), rgba(255,255,255,0.15)); backdrop-filter: blur(10px);">
-            
-            <img class="rounded-4 mb-3 shadow" src="images/atomcayi.jpg" alt="El Yapımı Kurabiye"
-              style="width: 100%; height: auto; object-fit: cover;">
-            
-            <p class="fw-semibold mb-3">Özel kampanyalardan ve indirimlerden haberdar olun!</p>
-            
-            <div class="d-flex justify-content-between align-items-center gap-2">
-              <input type="email" class="form-control rounded-3 border-0 shadow-sm"
-                placeholder="E-posta adresinizi girin"
-                style="height: 50px; padding-left: 15px; background-color: #fff;">
-              
-              <button class="btn btn-danger rounded-3 shadow-sm px-3 fw-semibold"
-                type="button" style="height: 50px;">
-                Abone Ol
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 

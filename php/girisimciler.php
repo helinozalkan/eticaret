@@ -46,10 +46,6 @@
 <div class="container py-5">
   <h2 class="text-center text-primary mb-5">GİRİŞİMCİLERİMİZ: YÜZLERCE EMEKÇİ ETİCARET'TE!</h2>
 
-  <div class="back-button">
-        <a class="btn btn-secondary" href="../index.php">←</a>
-    </div>
-
   <div class="row row-cols-1 row-cols-md-4 g-4">
     <!-- Girişimci kartları buraya aynı şekilde -->
     <div class="col">
